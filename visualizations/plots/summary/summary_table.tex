@@ -1,0 +1,49 @@
+\begin{table}[htbp]
+\centering
+\caption{Summary of all experimental results. Best Dice score per category shown in \textbf{bold}.}
+\label{tab:summary}
+\small
+\begin{tabular}{llcc}
+\toprule
+\textbf{Category} & \textbf{Configuration} & \textbf{Best Dice} & \textbf{Best Epoch} \\
+\midrule
+Augmentation & No Augmentation & 0.6838 & 140 \\
+ & Random Affine & 0.7080 & 120 \\
+ & Random Elastic & \textbf{0.7101} & 140 \\
+ & Random Spatial Crop & 0.6852 & 100 \\
+ & Random Zoom & 0.7012 & 140 \\
+\midrule
+Delayed Augmentation & No Augmentation & 0.6838 & 140 \\
+ & Random Affine & 0.7051 & 190 \\
+ & Random Elastic & \textbf{0.7284} & 190 \\
+ & Random Spatial Crop & 0.6691 & 30 \\
+ & Random Zoom & 0.6961 & 100 \\
+\midrule
+Model Architecture & UNet & 0.6817 & 50 \\
+ & Deeper UNet & \textbf{0.7554} & 240 \\
+ & SegResNet & 0.6602 & 60 \\
+\midrule
+Data Parallelism & 1 GPU & 0.6473 & 130 \\
+ & 2 GPUs & 0.6506 & 130 \\
+ & 4 GPUs & \textbf{0.6677} & 120 \\
+\midrule
+Eff. BSZ (LR Scale) & Batch Size 2 & \textbf{0.6884} & 130 \\
+ & Batch Size 4 & 0.6612 & 80 \\
+ & Batch Size 8 & 0.6452 & 110 \\
+ & Batch Size 16 & 0.6469 & 100 \\
+\midrule
+Eff. BSZ (No LR Scale) & Batch Size 2 & 0.6662 & 140 \\
+ & Batch Size 4 & \textbf{0.6923} & 70 \\
+ & Batch Size 8 & 0.6793 & 340 \\
+ & Batch Size 16 & 0.6776 & 190 \\
+\midrule
+Input Resolution & Crop 1 (1.4x) & 0.5621 & 90 \\
+ & Crop 2 (1.2x) & 0.6466 & 50 \\
+ & Crop 3 (1.0x) & \textbf{0.6843} & 50 \\
+ & Crop 4 (0.8x) & 0.5835 & 20 \\
+\midrule
+SSL Pretraining & No Pretraining & 0.6724 & 80 \\
+ & With Pretraining & \textbf{0.6746} & 60 \\
+\bottomrule
+\end{tabular}
+\end{table}
