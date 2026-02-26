@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Style B: Notebook Tabs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ===========================================
+   NOTEBOOK TABS — Editorial, organized, elegant, tactile
+   Cream paper card on dark background with colorful section tabs.
+   =========================================== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+    --bg-outer: #2d2d2d;
+    --bg-page: #f8f6f1;
+    --text-primary: #1a1a1a;
+    --text-secondary: #555;
+    --tab-1: #98d4bb;
+    --tab-2: #c7b8ea;
+    --tab-3: #f4b8c5;
+    --tab-4: #a8d8ea;
+    --tab-5: #ffe6a7;
+    --title-size: clamp(2rem, 5.5vw, 4rem);
+    --subtitle-size: clamp(0.85rem, 1.6vw, 1.1rem);
+    --slide-padding: clamp(2rem, 5vw, 5rem);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg-outer);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.slide {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(1rem, 3vw, 3rem);
+    position: relative;
+}
+
+/* Paper card */
+.paper {
+    background: var(--bg-page);
+    border-radius: 4px;
+    width: min(90vw, 900px);
+    height: min(85vh, 620px);
+    padding: var(--slide-padding);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+/* Binder holes */
+.paper::before {
+    content: '';
+    position: absolute;
+    left: clamp(0.8rem, 2vw, 1.8rem);
+    top: 15%;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    box-shadow:
+        0 calc(min(70vh, 500px) * 0.25) 0 -1px #ccc,
+        0 calc(min(70vh, 500px) * 0.25) 0 0 transparent,
+        0 calc(min(70vh, 500px) * 0.5) 0 -1px #ccc;
+    opacity: 0;
+    animation: fadeIn 0.6s 0.3s var(--ease-out-expo) forwards;
+}
+
+/* Section tabs on right edge */
+.tabs {
+    position: absolute;
+    right: -28px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tab {
+    width: 28px;
+    border-radius: 0 6px 6px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: translateX(-10px);
+}
+
+.tab span {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-size: clamp(0.5rem, 1vh, 0.7rem);
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.5);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.tab:nth-child(1) { height: 50px; background: var(--tab-1); animation: tabIn 0.5s 0.4s var(--ease-out-expo) forwards; }
+.tab:nth-child(2) { height: 45px; background: var(--tab-2); animation: tabIn 0.5s 0.5s var(--ease-out-expo) forwards; }
+.tab:nth-child(3) { height: 55px; background: var(--tab-3); animation: tabIn 0.5s 0.6s var(--ease-out-expo) forwards; }
+.tab:nth-child(4) { height: 40px; background: var(--tab-4); animation: tabIn 0.5s 0.7s var(--ease-out-expo) forwards; }
+.tab:nth-child(5) { height: 48px; background: var(--tab-5); animation: tabIn 0.5s 0.8s var(--ease-out-expo) forwards; }
+
+@keyframes tabIn {
+    to { opacity: 1; transform: translateX(0); }
+}
+
+.content {
+    padding-left: clamp(1.5rem, 4vw, 3rem);
+    text-align: left;
+}
+
+.tag {
+    display: inline-block;
+    font-size: clamp(0.55rem, 0.9vw, 0.7rem);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-secondary);
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.3em 0.8em;
+    border-radius: 3px;
+    margin-bottom: clamp(0.8rem, 2vh, 1.5rem);
+    opacity: 0;
+    transform: translateY(15px);
+    animation: revealUp 0.7s 0.5s var(--ease-out-expo) forwards;
+}
+
+h1 {
+    font-family: 'Bodoni Moda', serif;
+    font-size: var(--title-size);
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    opacity: 0;
+    transform: translateY(25px);
+    animation: revealUp 0.9s 0.6s var(--ease-out-expo) forwards;
+}
+
+h1 strong {
+    font-weight: 700;
+    color: #2a6b5a;
+}
+
+.rule {
+    width: 50px;
+    height: 2px;
+    background: #1a1a1a;
+    margin: clamp(0.8rem, 2vh, 1.5rem) 0;
+    opacity: 0;
+    animation: revealUp 0.5s 0.8s var(--ease-out-expo) forwards;
+}
+
+.subtitle {
+    font-size: var(--subtitle-size);
+    font-weight: 400;
+    color: var(--text-secondary);
+    max-width: 28em;
+    line-height: 1.5;
+    opacity: 0;
+    transform: translateY(15px);
+    animation: revealUp 0.7s 0.9s var(--ease-out-expo) forwards;
+}
+
+.credit {
+    font-size: clamp(0.6rem, 0.85vw, 0.72rem);
+    color: #999;
+    margin-top: clamp(1rem, 2.5vh, 2rem);
+    letter-spacing: 0.08em;
+    opacity: 0;
+    animation: revealUp 0.5s 1.1s var(--ease-out-expo) forwards;
+}
+
+@keyframes revealUp {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+    to { opacity: 0.6; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.2s !important;
+    }
+}
+</style>
+</head>
+<body>
+<section class="slide">
+    <div class="paper">
+        <div class="tabs">
+            <div class="tab"><span>Intro</span></div>
+            <div class="tab"><span>Data</span></div>
+            <div class="tab"><span>Model</span></div>
+            <div class="tab"><span>Results</span></div>
+            <div class="tab"><span>End</span></div>
+        </div>
+        <div class="content">
+            <div class="tag">Deep Learning Systems &mdash; NYU Courant</div>
+            <h1>Multi-Organ Segmentation<br>for <strong>Head & Neck Cancer</strong></h1>
+            <div class="rule"></div>
+            <p class="subtitle">A systematic study of training strategies for 3D medical image segmentation on CT scans with 9 anatomical structures.</p>
+            <p class="credit">PDDCA15 &middot; MONAI &middot; PyTorch</p>
+        </div>
+    </div>
+</section>
+</body>
+</html>

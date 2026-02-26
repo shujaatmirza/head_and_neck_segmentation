@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Style C: Swiss Modern</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;700;800;900&family=Nunito:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ===========================================
+   SWISS MODERN — Clean, precise, Bauhaus-inspired
+   Pure white, pure black, red accent. Visible grid.
+   =========================================== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+    --bg-primary: #fafafa;
+    --text-primary: #0a0a0a;
+    --text-secondary: #666;
+    --accent-red: #ff3300;
+    --grid-color: rgba(0, 0, 0, 0.04);
+    --title-size: clamp(2.2rem, 6vw, 5rem);
+    --subtitle-size: clamp(0.85rem, 1.6vw, 1.1rem);
+    --slide-padding: clamp(2rem, 5vw, 5rem);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+}
+
+.slide {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    display: flex;
+    position: relative;
+    padding: var(--slide-padding);
+}
+
+/* Visible grid background */
+.slide::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        linear-gradient(var(--grid-color) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+    background-size: clamp(30px, 5vw, 60px) clamp(30px, 5vw, 60px);
+    z-index: 0;
+}
+
+/* Red geometric accent — circle outline */
+.geo-circle {
+    position: absolute;
+    top: clamp(2rem, 8vh, 6rem);
+    right: clamp(3rem, 10vw, 10rem);
+    width: clamp(120px, 20vw, 280px);
+    height: clamp(120px, 20vw, 280px);
+    border: 3px solid var(--accent-red);
+    border-radius: 50%;
+    opacity: 0;
+    transform: scale(0.8);
+    animation: geoIn 1s 0.3s var(--ease-out-expo) forwards;
+    z-index: 1;
+}
+
+/* Red line crossing */
+.geo-line {
+    position: absolute;
+    top: 0;
+    right: clamp(8rem, 20vw, 20rem);
+    width: 2px;
+    height: 100%;
+    background: var(--accent-red);
+    opacity: 0;
+    animation: lineIn 0.8s 0.2s var(--ease-out-expo) forwards;
+    z-index: 1;
+}
+
+/* Red dot */
+.geo-dot {
+    position: absolute;
+    bottom: clamp(3rem, 10vh, 8rem);
+    right: clamp(6rem, 15vw, 15rem);
+    width: 12px;
+    height: 12px;
+    background: var(--accent-red);
+    border-radius: 50%;
+    opacity: 0;
+    animation: dotIn 0.5s 0.8s var(--ease-out-expo) forwards;
+    z-index: 1;
+}
+
+@keyframes geoIn {
+    to { opacity: 0.2; transform: scale(1); }
+}
+
+@keyframes lineIn {
+    to { opacity: 0.12; }
+}
+
+@keyframes dotIn {
+    to { opacity: 0.6; }
+}
+
+.content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    max-width: 55%;
+    z-index: 2;
+}
+
+.number {
+    font-family: 'Archivo', sans-serif;
+    font-size: clamp(4rem, 10vw, 9rem);
+    font-weight: 900;
+    line-height: 1;
+    color: var(--accent-red);
+    opacity: 0;
+    transform: translateX(-20px);
+    animation: slideIn 0.9s 0.2s var(--ease-out-expo) forwards;
+    margin-bottom: clamp(0.5rem, 1.5vh, 1rem);
+}
+
+h1 {
+    font-family: 'Archivo', sans-serif;
+    font-size: var(--title-size);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    text-transform: uppercase;
+    opacity: 0;
+    transform: translateY(25px);
+    animation: revealUp 0.9s 0.4s var(--ease-out-expo) forwards;
+}
+
+.rule {
+    width: 60px;
+    height: 4px;
+    background: var(--accent-red);
+    margin: clamp(0.8rem, 2vh, 1.5rem) 0;
+    opacity: 0;
+    animation: revealUp 0.5s 0.6s var(--ease-out-expo) forwards;
+}
+
+.subtitle {
+    font-size: var(--subtitle-size);
+    font-weight: 400;
+    color: var(--text-secondary);
+    max-width: 26em;
+    line-height: 1.6;
+    opacity: 0;
+    transform: translateY(15px);
+    animation: revealUp 0.7s 0.7s var(--ease-out-expo) forwards;
+}
+
+.credit {
+    font-family: 'Archivo', sans-serif;
+    font-size: clamp(0.55rem, 0.8vw, 0.7rem);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-secondary);
+    margin-top: clamp(1.5rem, 3vh, 2.5rem);
+    opacity: 0;
+    animation: revealUp 0.5s 0.9s var(--ease-out-expo) forwards;
+}
+
+@keyframes revealUp {
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+    to { opacity: 1; transform: translateX(0); }
+}
+
+@media (max-width: 768px) {
+    .content { max-width: 80%; }
+    .geo-circle { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.2s !important;
+    }
+}
+</style>
+</head>
+<body>
+<section class="slide">
+    <div class="geo-circle"></div>
+    <div class="geo-line"></div>
+    <div class="geo-dot"></div>
+    <div class="content">
+        <div class="number">01</div>
+        <h1>Multi-Organ<br>Segmentation</h1>
+        <div class="rule"></div>
+        <p class="subtitle">A systematic study of training strategies for 3D medical image segmentation on CT scans with 9 anatomical structures.</p>
+        <p class="credit">NYU Courant &middot; Deep Learning Systems &middot; PDDCA15</p>
+    </div>
+</section>
+</body>
+</html>
