@@ -4,488 +4,756 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Multi-Organ Segmentation for Head &amp; Neck Cancer</title>
+
+<!-- ===========================================
+     FONTS: Bodoni Moda (editorial display) + DM Sans (clean body)
+     Notebook Tabs style — editorial, organized, elegant
+     =========================================== -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
 <style>
-/* ─── Reset & Base ──────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
+/* ===========================================
+   CSS CUSTOM PROPERTIES (THEME)
+   Notebook Tabs: cream paper on dark, colorful section tabs
+   Change these to retheme the whole presentation.
+   =========================================== */
 :root {
-  --bg-deep: #0a0e1a;
-  --bg-card: #111827;
-  --bg-card-hover: #1a2332;
-  --accent-primary: #06b6d4;
-  --accent-secondary: #8b5cf6;
-  --accent-tertiary: #f59e0b;
-  --accent-success: #10b981;
-  --accent-danger: #ef4444;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --glow-primary: rgba(6, 182, 212, 0.3);
-  --glow-secondary: rgba(139, 92, 246, 0.3);
+    /* Outer background */
+    --bg-outer: #2d2d2d;
+
+    /* Paper surface */
+    --bg-page: #f8f6f1;
+    --bg-page-alt: #f3f0e8;
+
+    /* Text on paper */
+    --text-primary: #1a1a1a;
+    --text-secondary: #555;
+    --text-muted: #999;
+
+    /* Section tab colors */
+    --tab-intro: #98d4bb;    /* Mint */
+    --tab-data: #c7b8ea;     /* Lavender */
+    --tab-model: #f4b8c5;    /* Pink */
+    --tab-results: #a8d8ea;  /* Sky */
+    --tab-end: #ffe6a7;      /* Cream */
+
+    /* Accent colors for content */
+    --accent-green: #2a6b5a;
+    --accent-lavender: #6b5ca5;
+    --accent-pink: #b85c6e;
+    --accent-sky: #3a7ca5;
+    --accent-amber: #b8860b;
+    --accent-red: #c0392b;
+
+    /* Typography — MUST use clamp() */
+    --font-display: 'Bodoni Moda', 'Georgia', serif;
+    --font-body: 'DM Sans', 'Helvetica Neue', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --title-size: clamp(1.8rem, 4.5vw, 3.5rem);
+    --h2-size: clamp(1.3rem, 3vw, 2.2rem);
+    --h3-size: clamp(0.85rem, 1.5vw, 1.1rem);
+    --body-size: clamp(0.75rem, 1.3vw, 1rem);
+    --small-size: clamp(0.65rem, 1vw, 0.8rem);
+    --mono-size: clamp(0.7rem, 1.1vw, 0.9rem);
+
+    /* Spacing — MUST use clamp() */
+    --slide-padding: clamp(1.5rem, 4vw, 3.5rem);
+    --content-gap: clamp(0.5rem, 1.5vw, 1.2rem);
+    --paper-margin: clamp(0.8rem, 2.5vw, 2.5rem);
+
+    /* Animation */
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+    --duration: 0.6s;
 }
 
-html { font-size: 16px; scroll-behavior: smooth; }
+/* ===========================================
+   BASE STYLES & VIEWPORT FITTING
+   =========================================== */
+*, *::before, *::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+    overflow-x: hidden;
+}
+
+html {
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+}
 
 body {
-  font-family: 'Space Grotesk', system-ui, sans-serif;
-  background: var(--bg-deep);
-  color: var(--text-primary);
-  overflow: hidden;
+    font-family: var(--font-body);
+    background: var(--bg-outer);
+    color: var(--text-primary);
 }
 
-/* ─── Slide Container ───────────────────────────────────────────────────── */
-.deck {
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
-  overflow: hidden;
-  position: relative;
-}
-
+/* ===========================================
+   SLIDE CONTAINER
+   Each slide = exact viewport height, no scrolling
+   =========================================== */
 .slide {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: clamp(2rem, 5vh, 4rem) clamp(3rem, 8vw, 8rem);
-  opacity: 0;
-  transform: translateX(60px);
-  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-  pointer-events: none;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    scroll-snap-align: start;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--paper-margin);
+    position: relative;
 }
 
-.slide.active {
-  opacity: 1;
-  transform: translateX(0);
-  pointer-events: all;
+/* ===========================================
+   PAPER CARD
+   The cream-colored "notebook page" container
+   =========================================== */
+.paper {
+    background: var(--bg-page);
+    border-radius: 3px;
+    width: min(92vw, 960px);
+    height: min(88vh, 88dvh, 660px);
+    position: relative;
+    box-shadow:
+        0 25px 60px rgba(0, 0, 0, 0.35),
+        0 3px 10px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
 }
 
-.slide.exit-left {
-  opacity: 0;
-  transform: translateX(-60px);
+/* Binder holes — decorative left edge */
+.paper::before {
+    content: '';
+    position: absolute;
+    left: clamp(0.7rem, 1.5vw, 1.5rem);
+    top: 18%;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    box-shadow:
+        0 calc(min(75vh, 500px) * 0.3) 0 -1px #ccc,
+        0 calc(min(75vh, 500px) * 0.6) 0 -1px #ccc;
+    z-index: 2;
 }
 
-/* ─── Typography ────────────────────────────────────────────────────────── */
+/* ===========================================
+   SECTION TABS — Right edge of paper
+   Colorful tabs that indicate current section
+   =========================================== */
+.tabs {
+    position: absolute;
+    right: -26px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    z-index: 3;
+}
+
+.tab {
+    width: 26px;
+    border-radius: 0 5px 5px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.45;
+    transition: opacity 0.4s var(--ease-out-expo),
+                width 0.3s var(--ease-out-expo);
+    cursor: pointer;
+}
+
+.tab.active {
+    opacity: 1;
+    width: 32px;
+}
+
+.tab span {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-family: var(--font-body);
+    font-size: clamp(0.45rem, 0.8vh, 0.65rem);
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.5);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.tab-intro  { height: 48px; background: var(--tab-intro); }
+.tab-data   { height: 42px; background: var(--tab-data); }
+.tab-model  { height: 52px; background: var(--tab-model); }
+.tab-results{ height: 56px; background: var(--tab-results); }
+.tab-end    { height: 44px; background: var(--tab-end); }
+
+/* ===========================================
+   SLIDE CONTENT
+   Inner content area with proper padding
+   =========================================== */
+.slide-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: var(--slide-padding);
+    padding-left: clamp(2.5rem, 5vw, 4.5rem);
+    max-height: 100%;
+    overflow: hidden;
+}
+
+/* ===========================================
+   SLIDE NUMBER
+   Bottom-right of paper
+   =========================================== */
+.slide-num {
+    position: absolute;
+    bottom: clamp(0.6rem, 1.5vh, 1.2rem);
+    right: clamp(1rem, 2.5vw, 2rem);
+    font-family: var(--font-mono);
+    font-size: var(--small-size);
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+}
+
+/* ===========================================
+   TYPOGRAPHY
+   Bodoni Moda for headings, DM Sans for body
+   =========================================== */
 h1 {
-  font-size: clamp(2.2rem, 5vw, 4rem);
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
-  margin-bottom: clamp(0.5rem, 2vh, 1.5rem);
+    font-family: var(--font-display);
+    font-size: var(--title-size);
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+h1 strong {
+    font-weight: 700;
 }
 
 h2 {
-  font-size: clamp(1.6rem, 3.5vw, 2.8rem);
-  font-weight: 600;
-  line-height: 1.15;
-  letter-spacing: -0.02em;
-  margin-bottom: clamp(0.5rem, 2vh, 1.2rem);
+    font-family: var(--font-display);
+    font-size: var(--h2-size);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+    margin-bottom: var(--content-gap);
 }
 
 h3 {
-  font-size: clamp(1rem, 1.8vw, 1.4rem);
-  font-weight: 500;
-  color: var(--text-secondary);
-  margin-bottom: clamp(0.3rem, 1vh, 0.8rem);
+    font-family: var(--font-body);
+    font-size: var(--h3-size);
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: clamp(0.3rem, 0.8vh, 0.6rem);
 }
 
 p, li {
-  font-size: clamp(0.9rem, 1.5vw, 1.2rem);
-  line-height: 1.5;
-  color: var(--text-secondary);
+    font-size: var(--body-size);
+    line-height: 1.5;
+    color: var(--text-secondary);
 }
 
-.mono {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: clamp(0.75rem, 1.2vw, 1rem);
+/* ===========================================
+   TAG — Section label pills
+   =========================================== */
+.tag {
+    display: inline-block;
+    font-family: var(--font-body);
+    font-size: clamp(0.55rem, 0.85vw, 0.68rem);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    padding: 0.25em 0.7em;
+    border-radius: 3px;
+    margin-bottom: clamp(0.4rem, 1vh, 0.8rem);
 }
 
-/* ─── Accent Text ───────────────────────────────────────────────────────── */
-.accent { color: var(--accent-primary); }
-.accent-2 { color: var(--accent-secondary); }
-.accent-3 { color: var(--accent-tertiary); }
-.accent-4 { color: var(--accent-success); }
+.tag-intro  { color: #1a5c47; background: rgba(152, 212, 187, 0.35); }
+.tag-data   { color: #4a3d7a; background: rgba(199, 184, 234, 0.35); }
+.tag-model  { color: #7a3d4d; background: rgba(244, 184, 197, 0.35); }
+.tag-results{ color: #2d6a8a; background: rgba(168, 216, 234, 0.35); }
+.tag-end    { color: #7a6520; background: rgba(255, 230, 167, 0.45); }
 
-/* ─── Slide Backgrounds ────────────────────────────────────────────────── */
-.slide::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  z-index: -1;
+/* ===========================================
+   RULE — Horizontal divider
+   =========================================== */
+.rule {
+    width: 50px;
+    height: 2px;
+    background: var(--text-primary);
+    margin: clamp(0.5rem, 1.2vh, 1rem) 0;
 }
 
-.slide-title::before {
-  background:
-    radial-gradient(ellipse 80% 50% at 20% 80%, rgba(6, 182, 212, 0.12) 0%, transparent 60%),
-    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 60%),
-    var(--bg-deep);
-}
+.rule-green  { background: var(--accent-green); }
+.rule-pink   { background: var(--accent-pink); }
+.rule-sky    { background: var(--accent-sky); }
 
-.slide-section::before {
-  background:
-    radial-gradient(ellipse 50% 50% at 50% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 70%),
-    var(--bg-deep);
-}
-
-.slide-content::before {
-  background: var(--bg-deep);
-}
-
-.slide-results::before {
-  background:
-    radial-gradient(ellipse 60% 40% at 30% 70%, rgba(16, 185, 129, 0.08) 0%, transparent 60%),
-    var(--bg-deep);
-}
-
-.slide-conclusion::before {
-  background:
-    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(245, 158, 11, 0.08) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 40% at 80% 80%, rgba(6, 182, 212, 0.06) 0%, transparent 60%),
-    var(--bg-deep);
-}
-
-/* ─── Slide Number ──────────────────────────────────────────────────────── */
-.slide-num {
-  position: absolute;
-  top: clamp(1rem, 3vh, 2rem);
-  right: clamp(2rem, 5vw, 4rem);
-  font-family: 'JetBrains Mono', monospace;
-  font-size: clamp(0.7rem, 1vw, 0.85rem);
-  color: var(--text-muted);
-  letter-spacing: 0.1em;
-}
-
-/* ─── Section Number (large decorative) ─────────────────────────────────── */
-.section-num {
-  font-size: clamp(4rem, 10vw, 9rem);
-  font-weight: 700;
-  color: transparent;
-  -webkit-text-stroke: 1.5px var(--accent-primary);
-  opacity: 0.15;
-  position: absolute;
-  right: clamp(2rem, 6vw, 6rem);
-  top: clamp(1rem, 3vh, 3rem);
-  line-height: 1;
-  z-index: 0;
-}
-
-/* ─── Cards / Grid ──────────────────────────────────────────────────────── */
+/* ===========================================
+   CARDS — Content containers
+   =========================================== */
 .card-grid {
-  display: grid;
-  gap: clamp(0.6rem, 1.5vh, 1rem);
-  margin-top: clamp(0.5rem, 2vh, 1.5rem);
+    display: grid;
+    gap: clamp(0.4rem, 1vh, 0.7rem);
+    margin-top: clamp(0.3rem, 1vh, 0.6rem);
 }
 
 .grid-2 { grid-template-columns: 1fr 1fr; }
 .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
-.grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
 
 .card {
-  background: var(--bg-card);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  padding: clamp(0.8rem, 2vh, 1.5rem);
-  transition: border-color 0.3s, background 0.3s;
-}
-
-.card:hover {
-  border-color: rgba(6, 182, 212, 0.3);
-  background: var(--bg-card-hover);
+    background: var(--bg-page-alt);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 6px;
+    padding: clamp(0.6rem, 1.5vh, 1.1rem);
 }
 
 .card-label {
-  font-size: clamp(0.65rem, 0.9vw, 0.75rem);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  margin-bottom: 0.3rem;
+    font-family: var(--font-body);
+    font-size: clamp(0.55rem, 0.8vw, 0.68rem);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.2rem;
 }
 
 .card-value {
-  font-size: clamp(1.4rem, 3vw, 2.2rem);
-  font-weight: 700;
-  line-height: 1.1;
+    font-family: var(--font-display);
+    font-size: clamp(1.2rem, 2.5vw, 2rem);
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--text-primary);
 }
 
 .card-detail {
-  font-size: clamp(0.7rem, 1vw, 0.85rem);
-  color: var(--text-muted);
-  margin-top: 0.2rem;
+    font-size: var(--small-size);
+    color: var(--text-muted);
+    margin-top: 0.15rem;
+    line-height: 1.35;
 }
 
-/* ─── Horizontal Bar Chart ──────────────────────────────────────────────── */
+/* ===========================================
+   BAR CHART — Horizontal animated bars
+   =========================================== */
 .bar-chart {
-  display: flex;
-  flex-direction: column;
-  gap: clamp(0.4rem, 1vh, 0.7rem);
-  margin-top: clamp(0.5rem, 1.5vh, 1rem);
-  width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.3rem, 0.7vh, 0.5rem);
+    margin-top: clamp(0.3rem, 0.8vh, 0.5rem);
 }
 
 .bar-row {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: clamp(0.4rem, 1vw, 0.7rem);
 }
 
 .bar-label {
-  font-size: clamp(0.7rem, 1vw, 0.85rem);
-  color: var(--text-secondary);
-  min-width: clamp(6rem, 12vw, 10rem);
-  text-align: right;
-  flex-shrink: 0;
+    font-size: var(--small-size);
+    color: var(--text-secondary);
+    min-width: clamp(5rem, 10vw, 8rem);
+    text-align: right;
+    flex-shrink: 0;
 }
 
 .bar-track {
-  flex: 1;
-  height: clamp(1.4rem, 2.5vh, 2rem);
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 6px;
-  overflow: hidden;
-  position: relative;
+    flex: 1;
+    height: clamp(1.1rem, 2vh, 1.6rem);
+    background: rgba(0, 0, 0, 0.04);
+    border-radius: 4px;
+    overflow: hidden;
 }
 
 .bar-fill {
-  height: 100%;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding-right: 0.5rem;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: clamp(0.6rem, 0.9vw, 0.75rem);
-  font-weight: 500;
-  color: white;
-  width: 0;
-  transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    height: 100%;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: clamp(0.3rem, 0.5vw, 0.5rem);
+    font-family: var(--font-mono);
+    font-size: clamp(0.55rem, 0.8vw, 0.68rem);
+    font-weight: 500;
+    color: #fff;
+    width: 0;
+    transition: width 1s var(--ease-out-expo);
 }
 
-.slide.active .bar-fill { /* width set inline */ }
+/* Bar color variants */
+.bar-green  { background: linear-gradient(90deg, #6dbfa0, var(--accent-green)); }
+.bar-lav    { background: linear-gradient(90deg, #a99dd4, var(--accent-lavender)); }
+.bar-pink   { background: linear-gradient(90deg, #d9909e, var(--accent-pink)); }
+.bar-sky    { background: linear-gradient(90deg, #7dbdd6, var(--accent-sky)); }
+.bar-amber  { background: linear-gradient(90deg, #d4b35a, var(--accent-amber)); }
+.bar-red    { background: linear-gradient(90deg, #e07070, var(--accent-red)); }
 
-.bar-cyan { background: linear-gradient(90deg, rgba(6, 182, 212, 0.7), var(--accent-primary)); }
-.bar-purple { background: linear-gradient(90deg, rgba(139, 92, 246, 0.7), var(--accent-secondary)); }
-.bar-amber { background: linear-gradient(90deg, rgba(245, 158, 11, 0.7), var(--accent-tertiary)); }
-.bar-green { background: linear-gradient(90deg, rgba(16, 185, 129, 0.7), var(--accent-success)); }
-.bar-red { background: linear-gradient(90deg, rgba(239, 68, 68, 0.7), var(--accent-danger)); }
-
-/* ─── Tag ───────────────────────────────────────────────────────────────── */
-.tag {
-  display: inline-block;
-  font-size: clamp(0.6rem, 0.85vw, 0.72rem);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  padding: 0.25em 0.8em;
-  border-radius: 999px;
-  border: 1px solid;
-  margin-bottom: clamp(0.5rem, 1.5vh, 1rem);
-}
-
-.tag-cyan { color: var(--accent-primary); border-color: rgba(6, 182, 212, 0.4); background: rgba(6, 182, 212, 0.08); }
-.tag-purple { color: var(--accent-secondary); border-color: rgba(139, 92, 246, 0.4); background: rgba(139, 92, 246, 0.08); }
-.tag-amber { color: var(--accent-tertiary); border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.08); }
-.tag-green { color: var(--accent-success); border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.08); }
-
-/* ─── Divider ───────────────────────────────────────────────────────────── */
-.divider {
-  width: 60px;
-  height: 3px;
-  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
-  border-radius: 2px;
-  margin: clamp(0.5rem, 1.5vh, 1rem) 0;
-}
-
-/* ─── List ──────────────────────────────────────────────────────────────── */
-.feature-list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: clamp(0.4rem, 1vh, 0.7rem);
-  margin-top: clamp(0.3rem, 1vh, 0.8rem);
-}
-
-.feature-list li {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.6rem;
-}
-
-.feature-list li::before {
-  content: '▸';
-  color: var(--accent-primary);
-  font-weight: 700;
-  flex-shrink: 0;
-  margin-top: 0.1em;
-}
-
-/* ─── Table ─────────────────────────────────────────────────────────────── */
+/* ===========================================
+   TABLE — Results tables
+   =========================================== */
 .results-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: clamp(0.5rem, 1.5vh, 1rem);
-  font-size: clamp(0.75rem, 1.1vw, 0.95rem);
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: clamp(0.3rem, 0.8vh, 0.5rem);
+    font-size: var(--small-size);
 }
 
 .results-table th {
-  text-align: left;
-  padding: clamp(0.3rem, 0.7vh, 0.6rem) clamp(0.5rem, 1vw, 1rem);
-  border-bottom: 2px solid rgba(6, 182, 212, 0.3);
-  color: var(--accent-primary);
-  font-weight: 600;
-  font-size: clamp(0.65rem, 0.9vw, 0.8rem);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+    text-align: left;
+    padding: clamp(0.2rem, 0.5vh, 0.4rem) clamp(0.4rem, 0.8vw, 0.7rem);
+    border-bottom: 2px solid var(--accent-green);
+    font-weight: 700;
+    font-size: clamp(0.55rem, 0.8vw, 0.68rem);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent-green);
 }
 
 .results-table td {
-  padding: clamp(0.3rem, 0.7vh, 0.5rem) clamp(0.5rem, 1vw, 1rem);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  color: var(--text-secondary);
+    padding: clamp(0.2rem, 0.5vh, 0.35rem) clamp(0.4rem, 0.8vw, 0.7rem);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    color: var(--text-secondary);
 }
 
 .results-table .highlight td {
-  color: var(--text-primary);
-  font-weight: 500;
+    color: var(--text-primary);
+    font-weight: 500;
 }
 
 .results-table .best {
-  color: var(--accent-success);
-  font-weight: 700;
-  font-family: 'JetBrains Mono', monospace;
+    color: var(--accent-green);
+    font-weight: 700;
+    font-family: var(--font-mono);
 }
 
-/* ─── Progress Bar (nav) ────────────────────────────────────────────────── */
-.progress-bar {
-  position: fixed;
-  bottom: 0; left: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
-  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 100;
+/* ===========================================
+   FEATURE LIST — Bullet points
+   =========================================== */
+.feature-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.25rem, 0.6vh, 0.5rem);
 }
 
-/* ─── Stagger animation for children ────────────────────────────────────── */
-.slide.active .stagger > * {
-  animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-.slide.active .stagger > *:nth-child(1) { animation-delay: 0.1s; }
-.slide.active .stagger > *:nth-child(2) { animation-delay: 0.2s; }
-.slide.active .stagger > *:nth-child(3) { animation-delay: 0.3s; }
-.slide.active .stagger > *:nth-child(4) { animation-delay: 0.35s; }
-.slide.active .stagger > *:nth-child(5) { animation-delay: 0.4s; }
-.slide.active .stagger > *:nth-child(6) { animation-delay: 0.45s; }
-.slide.active .stagger > *:nth-child(7) { animation-delay: 0.5s; }
-.slide.active .stagger > *:nth-child(8) { animation-delay: 0.55s; }
-
-@keyframes fadeSlideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to   { opacity: 1; transform: translateY(0); }
+.feature-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: var(--body-size);
 }
 
-/* ─── Two columns ───────────────────────────────────────────────────────── */
+.feature-list li::before {
+    content: '\25B8';
+    color: var(--accent-green);
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 0.05em;
+}
+
+/* ===========================================
+   TWO COLUMNS
+   =========================================== */
 .two-col {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(1.5rem, 4vw, 3rem);
-  align-items: start;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(1rem, 3vw, 2.5rem);
+    align-items: start;
 }
 
-/* ─── Insight callout ───────────────────────────────────────────────────── */
+/* ===========================================
+   INSIGHT CALLOUT
+   Key takeaway box
+   =========================================== */
 .insight {
-  border-left: 3px solid var(--accent-tertiary);
-  padding: clamp(0.5rem, 1vh, 0.8rem) clamp(0.8rem, 1.5vw, 1.2rem);
-  background: rgba(245, 158, 11, 0.05);
-  border-radius: 0 8px 8px 0;
-  margin-top: clamp(0.5rem, 1.5vh, 1rem);
+    border-left: 3px solid var(--accent-amber);
+    padding: clamp(0.3rem, 0.8vh, 0.6rem) clamp(0.5rem, 1vw, 0.8rem);
+    background: rgba(184, 134, 11, 0.06);
+    border-radius: 0 5px 5px 0;
+    margin-top: clamp(0.4rem, 1vh, 0.8rem);
 }
 
 .insight p {
-  color: var(--text-primary);
-  font-size: clamp(0.8rem, 1.2vw, 1rem);
+    color: var(--text-primary);
+    font-size: var(--small-size);
+    line-height: 1.45;
 }
 
-/* ─── Responsive ────────────────────────────────────────────────────────── */
+/* ===========================================
+   REVEAL ANIMATIONS
+   Elements animate in when slide becomes visible
+   =========================================== */
+.reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity var(--duration) var(--ease-out-expo),
+                transform var(--duration) var(--ease-out-expo);
+}
+
+.slide.visible .reveal {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Stagger children */
+.slide.visible .reveal:nth-child(1) { transition-delay: 0.08s; }
+.slide.visible .reveal:nth-child(2) { transition-delay: 0.16s; }
+.slide.visible .reveal:nth-child(3) { transition-delay: 0.24s; }
+.slide.visible .reveal:nth-child(4) { transition-delay: 0.32s; }
+.slide.visible .reveal:nth-child(5) { transition-delay: 0.38s; }
+.slide.visible .reveal:nth-child(6) { transition-delay: 0.44s; }
+.slide.visible .reveal:nth-child(7) { transition-delay: 0.50s; }
+
+/* ===========================================
+   PROGRESS BAR
+   Bottom of viewport, shows position
+   =========================================== */
+.progress-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--tab-intro), var(--tab-data), var(--tab-model), var(--tab-results), var(--tab-end));
+    transition: width 0.4s var(--ease-out-expo);
+    z-index: 100;
+}
+
+/* ===========================================
+   NAV DOTS — Right side navigation
+   =========================================== */
+.nav-dots {
+    position: fixed;
+    right: clamp(0.5rem, 1.5vw, 1.2rem);
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 50;
+}
+
+.nav-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    cursor: pointer;
+    transition: background 0.3s, transform 0.3s;
+    padding: 0;
+}
+
+.nav-dot.active {
+    background: rgba(255, 255, 255, 0.7);
+    transform: scale(1.3);
+}
+
+.nav-dot:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+/* ===========================================
+   ACCENT COLORS — For text highlights
+   =========================================== */
+.c-green  { color: var(--accent-green); }
+.c-lav    { color: var(--accent-lavender); }
+.c-pink   { color: var(--accent-pink); }
+.c-sky    { color: var(--accent-sky); }
+.c-amber  { color: var(--accent-amber); }
+.c-red    { color: var(--accent-red); }
+
+/* ===========================================
+   RESPONSIVE BREAKPOINTS
+   Height-based scaling for viewport fitting
+   =========================================== */
+
+/* Short screens (< 700px height) */
 @media (max-height: 700px) {
-  .slide { padding: 1.5rem 3rem; }
-  h1 { font-size: clamp(1.8rem, 4vw, 3rem); }
+    :root {
+        --slide-padding: clamp(1rem, 3vw, 2rem);
+        --paper-margin: clamp(0.5rem, 2vw, 1.5rem);
+        --title-size: clamp(1.5rem, 4vw, 2.5rem);
+        --h2-size: clamp(1.1rem, 2.5vw, 1.8rem);
+        --content-gap: clamp(0.3rem, 1vw, 0.8rem);
+    }
+
+    .paper {
+        height: min(92vh, 92dvh, 600px);
+    }
 }
 
+/* Very short (< 600px height) */
+@media (max-height: 600px) {
+    :root {
+        --slide-padding: clamp(0.8rem, 2.5vw, 1.5rem);
+        --title-size: clamp(1.2rem, 3.5vw, 2rem);
+        --body-size: clamp(0.65rem, 1.1vw, 0.85rem);
+    }
+
+    .nav-dots, .paper::before {
+        display: none;
+    }
+
+    .paper {
+        height: min(94vh, 94dvh, 550px);
+    }
+}
+
+/* Extremely short — landscape phones (< 500px) */
 @media (max-height: 500px) {
-  .slide { padding: 1rem 2rem; }
-  .card { padding: 0.5rem; }
+    :root {
+        --slide-padding: clamp(0.5rem, 2vw, 1rem);
+        --title-size: clamp(1rem, 3vw, 1.5rem);
+        --h2-size: clamp(0.9rem, 2vw, 1.25rem);
+        --body-size: clamp(0.6rem, 1vw, 0.8rem);
+    }
+
+    .tabs { display: none; }
 }
 
-@media (max-width: 768px) {
-  .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; }
-  .two-col { grid-template-columns: 1fr; }
+/* Narrow screens (< 600px width) */
+@media (max-width: 600px) {
+    .grid-3 { grid-template-columns: 1fr 1fr; }
+    .two-col { grid-template-columns: 1fr; gap: clamp(0.5rem, 1.5vw, 1rem); }
+
+    .tabs { right: -20px; }
+    .tab { width: 20px; }
+    .tab.active { width: 24px; }
+    .tab span { display: none; }
+
+    .bar-label { min-width: clamp(3.5rem, 8vw, 5rem); }
+}
+
+/* Very narrow (< 400px width) */
+@media (max-width: 400px) {
+    .tabs { display: none; }
+    .grid-3 { grid-template-columns: 1fr; }
+}
+
+/* ===========================================
+   REDUCED MOTION
+   Respect user accessibility preferences
+   =========================================== */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.2s !important;
+    }
+
+    html {
+        scroll-behavior: auto;
+    }
+
+    .bar-fill {
+        transition-duration: 0.01ms !important;
+    }
 }
 </style>
 </head>
 <body>
 
-<div class="deck" id="deck">
+<!-- ===========================================
+     PROGRESS BAR — Bottom of viewport
+     =========================================== -->
+<div class="progress-bar" id="progress"></div>
 
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <!-- SLIDE 0: Title -->
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <div class="slide slide-title active" data-slide="0">
+<!-- ===========================================
+     NAV DOTS — Right side, generated by JS
+     =========================================== -->
+<nav class="nav-dots" id="navDots" aria-label="Slide navigation"></nav>
+
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 0: Title                                                        -->
+<!-- Section: Intro                                                        -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section class="slide" data-section="intro" data-slide="0">
+  <div class="paper">
+    <div class="tabs">
+      <div class="tab tab-intro active"><span>Intro</span></div>
+      <div class="tab tab-data"><span>Data</span></div>
+      <div class="tab tab-model"><span>Model</span></div>
+      <div class="tab tab-results"><span>Results</span></div>
+      <div class="tab tab-end"><span>End</span></div>
+    </div>
     <span class="slide-num">01 / 13</span>
-    <div class="stagger">
-      <span class="tag tag-cyan">Deep Learning Systems &mdash; NYU Courant</span>
-      <h1>Multi-Organ Segmentation for<br><span class="accent">Head &amp; Neck Cancer</span></h1>
-      <div class="divider"></div>
-      <p style="max-width: 36rem;">A systematic study of training strategies for 3D medical image segmentation on CT scans with 9 anatomical structures.</p>
+    <div class="slide-content">
+      <div class="tag tag-intro reveal">Deep Learning Systems &mdash; NYU Courant</div>
+      <h1 class="reveal">Multi-Organ Segmentation<br>for <strong>Head &amp; Neck Cancer</strong></h1>
+      <div class="rule rule-green reveal"></div>
+      <p class="reveal" style="max-width: 30em;">A systematic study of training strategies for 3D medical image segmentation on CT scans with 9 anatomical structures.</p>
+      <p class="reveal" style="margin-top: clamp(0.8rem, 2vh, 1.5rem); color: var(--text-muted); font-size: var(--small-size); letter-spacing: 0.06em;">PDDCA15 &middot; MONAI &middot; PyTorch</p>
     </div>
   </div>
+</section>
 
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <!-- SLIDE 1: Problem -->
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <div class="slide slide-section" data-slide="1">
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 1: The Problem                                                  -->
+<!-- Section: Intro                                                        -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section class="slide" data-section="intro" data-slide="1">
+  <div class="paper">
+    <div class="tabs">
+      <div class="tab tab-intro active"><span>Intro</span></div>
+      <div class="tab tab-data"><span>Data</span></div>
+      <div class="tab tab-model"><span>Model</span></div>
+      <div class="tab tab-results"><span>Results</span></div>
+      <div class="tab tab-end"><span>End</span></div>
+    </div>
     <span class="slide-num">02 / 13</span>
-    <span class="section-num">01</span>
-    <div class="stagger">
-      <span class="tag tag-purple">Motivation</span>
-      <h2>The Problem</h2>
-      <p style="max-width:40rem; margin-bottom: clamp(0.5rem, 2vh, 1.5rem);">Radiation therapy for head &amp; neck cancer requires precise delineation of organs-at-risk. Manual segmentation is slow, costly, and inconsistent.</p>
-      <div class="card-grid grid-3">
+    <div class="slide-content">
+      <div class="tag tag-intro reveal">Motivation</div>
+      <h2 class="reveal">The Problem</h2>
+      <p class="reveal" style="max-width:34rem; margin-bottom: var(--content-gap);">Radiation therapy for head &amp; neck cancer requires precise delineation of organs-at-risk. Manual segmentation is slow, costly, and inconsistent.</p>
+      <div class="card-grid grid-3 reveal">
         <div class="card">
-          <div class="card-label accent">Challenge 1</div>
-          <div class="card-value" style="font-size:clamp(1rem,1.8vw,1.5rem);">Class Imbalance</div>
-          <div class="card-detail">OARs occupy &lt;5% of the CT volume. Naive models predict only background.</div>
+          <div class="card-label c-green">Challenge 1</div>
+          <div class="card-value" style="font-size: clamp(0.9rem, 1.6vw, 1.3rem);">Class Imbalance</div>
+          <div class="card-detail">OARs occupy &lt;5% of volume. Naive models predict only background.</div>
         </div>
         <div class="card">
-          <div class="card-label accent-2">Challenge 2</div>
-          <div class="card-value" style="font-size:clamp(1rem,1.8vw,1.5rem);">Memory Limits</div>
-          <div class="card-detail">A single 3D volume + UNet can exceed 30 GB, forcing batch size = 1.</div>
+          <div class="card-label c-lav">Challenge 2</div>
+          <div class="card-value" style="font-size: clamp(0.9rem, 1.6vw, 1.3rem);">Memory Limits</div>
+          <div class="card-detail">A single 3D volume + UNet can exceed 30 GB, forcing batch = 1.</div>
         </div>
         <div class="card">
-          <div class="card-label accent-3">Challenge 3</div>
-          <div class="card-value" style="font-size:clamp(1rem,1.8vw,1.5rem);">Limited Data</div>
+          <div class="card-label c-amber">Challenge 3</div>
+          <div class="card-value" style="font-size: clamp(0.9rem, 1.6vw, 1.3rem);">Limited Data</div>
           <div class="card-detail">Only 33 training volumes &mdash; high risk of overfitting.</div>
         </div>
       </div>
     </div>
   </div>
+</section>
 
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <!-- SLIDE 2: Dataset -->
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <div class="slide slide-content" data-slide="2">
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 2: Dataset                                                      -->
+<!-- Section: Data                                                         -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section class="slide" data-section="data" data-slide="2">
+  <div class="paper">
+    <div class="tabs">
+      <div class="tab tab-intro"><span>Intro</span></div>
+      <div class="tab tab-data active"><span>Data</span></div>
+      <div class="tab tab-model"><span>Model</span></div>
+      <div class="tab tab-results"><span>Results</span></div>
+      <div class="tab tab-end"><span>End</span></div>
+    </div>
     <span class="slide-num">03 / 13</span>
-    <span class="section-num">02</span>
-    <div class="stagger">
-      <span class="tag tag-cyan">Dataset</span>
-      <h2>PDDCA15 &mdash; 9 Organs at Risk</h2>
-      <div class="two-col">
+    <div class="slide-content">
+      <div class="tag tag-data reveal">Dataset</div>
+      <h2 class="reveal">PDDCA15 &mdash; 9 Organs at Risk</h2>
+      <div class="two-col reveal">
         <div>
           <ul class="feature-list">
             <li>Brain Stem</li>
@@ -493,93 +761,111 @@ p, li {
             <li>Mandible</li>
             <li>Optic Nerve (Left &amp; Right)</li>
             <li>Parotid Gland (Left &amp; Right)</li>
-            <li>Submandibular Gland (Left &amp; Right)</li>
+            <li>Submandibular (Left &amp; Right)</li>
           </ul>
         </div>
         <div>
-          <div class="card" style="margin-bottom:0.8rem;">
-            <div class="card-label accent">Training</div>
-            <div class="card-value">33 <span style="font-size:0.5em; color:var(--text-muted);">CT volumes</span></div>
-            <div class="card-detail">PDDCA15 + Cetuximab + PET-CT cohorts</div>
+          <div class="card" style="margin-bottom: clamp(0.3rem, 0.7vh, 0.5rem);">
+            <div class="card-label c-green">Training</div>
+            <div class="card-value">33 <span style="font-size:0.45em; color:var(--text-muted);">CT volumes</span></div>
+            <div class="card-detail">PDDCA15 + Cetuximab + PET-CT</div>
           </div>
-          <div class="card" style="margin-bottom:0.8rem;">
-            <div class="card-label accent-2">Testing</div>
-            <div class="card-value">5 <span style="font-size:0.5em; color:var(--text-muted);">CT volumes</span></div>
+          <div class="card" style="margin-bottom: clamp(0.3rem, 0.7vh, 0.5rem);">
+            <div class="card-label c-lav">Testing</div>
+            <div class="card-value">5 <span style="font-size:0.45em; color:var(--text-muted);">CT volumes</span></div>
           </div>
           <div class="card">
-            <div class="card-label accent-3">Avg. Volume</div>
-            <div class="card-value mono">78 &times; 206 &times; 164</div>
+            <div class="card-label c-amber">Avg. Volume</div>
+            <div class="card-value" style="font-family: var(--font-mono); font-size: clamp(1rem, 2vw, 1.5rem);">78 &times; 206 &times; 164</div>
           </div>
         </div>
       </div>
     </div>
   </div>
+</section>
 
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <!-- SLIDE 3: Architecture -->
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <div class="slide slide-content" data-slide="3">
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 3: Model Architectures                                          -->
+<!-- Section: Model                                                        -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section class="slide" data-section="model" data-slide="3">
+  <div class="paper">
+    <div class="tabs">
+      <div class="tab tab-intro"><span>Intro</span></div>
+      <div class="tab tab-data"><span>Data</span></div>
+      <div class="tab tab-model active"><span>Model</span></div>
+      <div class="tab tab-results"><span>Results</span></div>
+      <div class="tab tab-end"><span>End</span></div>
+    </div>
     <span class="slide-num">04 / 13</span>
-    <span class="section-num">03</span>
-    <div class="stagger">
-      <span class="tag tag-green">Methods</span>
-      <h2>Model Architectures</h2>
-      <p style="margin-bottom: clamp(0.5rem,1.5vh,1rem);">Three 3D architectures from MONAI, all with 10-channel output (background + 9 OARs).</p>
-      <div class="card-grid grid-3">
+    <div class="slide-content">
+      <div class="tag tag-model reveal">Methods</div>
+      <h2 class="reveal">Model Architectures</h2>
+      <p class="reveal" style="margin-bottom: var(--content-gap);">Three 3D architectures from MONAI, all with 10-channel output (background + 9 OARs).</p>
+      <div class="card-grid grid-3 reveal">
         <div class="card">
-          <div class="card-label accent">Baseline</div>
-          <div class="card-value" style="font-size:clamp(1.1rem,2vw,1.6rem);">UNet</div>
+          <div class="card-label c-sky">Baseline</div>
+          <div class="card-value" style="font-size: clamp(0.95rem, 1.7vw, 1.4rem);">UNet</div>
           <div class="card-detail">Features: (32, 64, 128, 256)<br>3 downsampling levels</div>
-          <div class="card-value accent" style="margin-top:0.5rem;font-size:clamp(1.2rem,2vw,1.8rem);">0.682</div>
+          <div class="card-value c-sky" style="margin-top: 0.4rem; font-size: clamp(1rem, 1.8vw, 1.5rem);">0.682</div>
         </div>
-        <div class="card" style="border-color:rgba(16,185,129,0.3);">
-          <div class="card-label accent-4">Best</div>
-          <div class="card-value" style="font-size:clamp(1.1rem,2vw,1.6rem);">Deeper UNet</div>
+        <div class="card" style="border-color: rgba(42, 107, 90, 0.4);">
+          <div class="card-label c-green">Best</div>
+          <div class="card-value" style="font-size: clamp(0.95rem, 1.7vw, 1.4rem);">Deeper UNet</div>
           <div class="card-detail">Features: (32, 64, 128, 256, 512, 32)<br>5 downsampling levels</div>
-          <div class="card-value accent-4" style="margin-top:0.5rem;font-size:clamp(1.2rem,2vw,1.8rem);">0.755</div>
+          <div class="card-value c-green" style="margin-top: 0.4rem; font-size: clamp(1rem, 1.8vw, 1.5rem);">0.755</div>
         </div>
         <div class="card">
-          <div class="card-label accent-2">Alternative</div>
-          <div class="card-value" style="font-size:clamp(1.1rem,2vw,1.6rem);">SegResNet</div>
+          <div class="card-label c-lav">Alternative</div>
+          <div class="card-value" style="font-size: clamp(0.95rem, 1.7vw, 1.4rem);">SegResNet</div>
           <div class="card-detail">Residual blocks, deconv upsampling<br>1.19M parameters</div>
-          <div class="card-value accent-2" style="margin-top:0.5rem;font-size:clamp(1.2rem,2vw,1.8rem);">0.660</div>
+          <div class="card-value c-lav" style="margin-top: 0.4rem; font-size: clamp(1rem, 1.8vw, 1.5rem);">0.660</div>
         </div>
       </div>
-      <div class="insight">
+      <div class="insight reveal">
         <p><strong>Key finding:</strong> Model depth is critical. Small structures (chiasm, optic nerves) get <strong>zero Dice</strong> with shallow networks.</p>
       </div>
     </div>
   </div>
+</section>
 
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <!-- SLIDE 4: Loss Functions -->
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <div class="slide slide-results" data-slide="4">
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 4: Loss Function Comparison                                     -->
+<!-- Section: Results                                                      -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section class="slide" data-section="results" data-slide="4">
+  <div class="paper">
+    <div class="tabs">
+      <div class="tab tab-intro"><span>Intro</span></div>
+      <div class="tab tab-data"><span>Data</span></div>
+      <div class="tab tab-model"><span>Model</span></div>
+      <div class="tab tab-results active"><span>Results</span></div>
+      <div class="tab tab-end"><span>End</span></div>
+    </div>
     <span class="slide-num">05 / 13</span>
-    <span class="section-num">04</span>
-    <div class="stagger">
-      <span class="tag tag-amber">Results</span>
-      <h2>Loss Function Comparison</h2>
-      <div class="bar-chart" id="loss-chart">
+    <div class="slide-content">
+      <div class="tag tag-results reveal">Results</div>
+      <h2 class="reveal">Loss Function Comparison</h2>
+      <div class="bar-chart reveal">
         <div class="bar-row">
           <span class="bar-label">Dice-CE Loss</span>
           <div class="bar-track"><div class="bar-fill bar-green" data-width="92%">0.737</div></div>
         </div>
         <div class="bar-row">
           <span class="bar-label">Dice Loss</span>
-          <div class="bar-track"><div class="bar-fill bar-cyan" data-width="87.6%">0.701</div></div>
+          <div class="bar-track"><div class="bar-fill bar-sky" data-width="87.6%">0.701</div></div>
         </div>
         <div class="bar-row">
           <span class="bar-label">Dice-Focal</span>
-          <div class="bar-track"><div class="bar-fill bar-cyan" data-width="86.9%">0.695</div></div>
+          <div class="bar-track"><div class="bar-fill bar-sky" data-width="86.9%">0.695</div></div>
         </div>
         <div class="bar-row">
           <span class="bar-label">Masked Dice</span>
-          <div class="bar-track"><div class="bar-fill bar-purple" data-width="85%">0.680</div></div>
+          <div class="bar-track"><div class="bar-fill bar-lav" data-width="85%">0.680</div></div>
         </div>
         <div class="bar-row">
           <span class="bar-label">Tversky</span>
-          <div class="bar-track"><div class="bar-fill bar-purple" data-width="79.3%">0.634</div></div>
+          <div class="bar-track"><div class="bar-fill bar-lav" data-width="79.3%">0.634</div></div>
         </div>
         <div class="bar-row">
           <span class="bar-label">Focal</span>
@@ -590,90 +876,108 @@ p, li {
           <div class="bar-track"><div class="bar-fill bar-red" data-width="31.3%">0.250</div></div>
         </div>
       </div>
-      <div class="insight">
+      <div class="insight reveal">
         <p><strong>+3.6% over Dice alone.</strong> CE provides gradients for large structures; Dice focuses on small organs.</p>
       </div>
     </div>
   </div>
+</section>
 
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <!-- SLIDE 5: Augmentation -->
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <div class="slide slide-content" data-slide="5">
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 5: Data Augmentation                                            -->
+<!-- Section: Results                                                      -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section class="slide" data-section="results" data-slide="5">
+  <div class="paper">
+    <div class="tabs">
+      <div class="tab tab-intro"><span>Intro</span></div>
+      <div class="tab tab-data"><span>Data</span></div>
+      <div class="tab tab-model"><span>Model</span></div>
+      <div class="tab tab-results active"><span>Results</span></div>
+      <div class="tab tab-end"><span>End</span></div>
+    </div>
     <span class="slide-num">06 / 13</span>
-    <span class="section-num">05</span>
-    <div class="stagger">
-      <span class="tag tag-cyan">Results</span>
-      <h2>Data Augmentation</h2>
-      <div class="two-col">
+    <div class="slide-content">
+      <div class="tag tag-results reveal">Results</div>
+      <h2 class="reveal">Data Augmentation</h2>
+      <div class="two-col reveal">
         <div>
-          <h3>Standard (from epoch 1)</h3>
+          <h3>Standard (epoch 1)</h3>
           <div class="bar-chart">
             <div class="bar-row">
-              <span class="bar-label" style="min-width:7rem;">Elastic</span>
+              <span class="bar-label" style="min-width: clamp(4rem, 8vw, 6rem);">Elastic</span>
               <div class="bar-track"><div class="bar-fill bar-green" data-width="88.8%">0.710</div></div>
             </div>
             <div class="bar-row">
-              <span class="bar-label" style="min-width:7rem;">Affine</span>
-              <div class="bar-track"><div class="bar-fill bar-cyan" data-width="88.5%">0.708</div></div>
+              <span class="bar-label" style="min-width: clamp(4rem, 8vw, 6rem);">Affine</span>
+              <div class="bar-track"><div class="bar-fill bar-sky" data-width="88.5%">0.708</div></div>
             </div>
             <div class="bar-row">
-              <span class="bar-label" style="min-width:7rem;">Zoom</span>
-              <div class="bar-track"><div class="bar-fill bar-cyan" data-width="87.7%">0.701</div></div>
+              <span class="bar-label" style="min-width: clamp(4rem, 8vw, 6rem);">Zoom</span>
+              <div class="bar-track"><div class="bar-fill bar-sky" data-width="87.7%">0.701</div></div>
             </div>
             <div class="bar-row">
-              <span class="bar-label" style="min-width:7rem;">Spatial Crop</span>
-              <div class="bar-track"><div class="bar-fill bar-purple" data-width="85.7%">0.685</div></div>
+              <span class="bar-label" style="min-width: clamp(4rem, 8vw, 6rem);">Sp. Crop</span>
+              <div class="bar-track"><div class="bar-fill bar-lav" data-width="85.7%">0.685</div></div>
             </div>
             <div class="bar-row">
-              <span class="bar-label" style="min-width:7rem;">No Aug.</span>
+              <span class="bar-label" style="min-width: clamp(4rem, 8vw, 6rem);">No Aug.</span>
               <div class="bar-track"><div class="bar-fill bar-amber" data-width="85.5%">0.684</div></div>
             </div>
           </div>
         </div>
         <div>
-          <h3>Delayed (from epoch 40)</h3>
+          <h3>Delayed (epoch 40)</h3>
           <div class="bar-chart">
             <div class="bar-row">
-              <span class="bar-label" style="min-width:7rem;">Elastic</span>
+              <span class="bar-label" style="min-width: clamp(4rem, 8vw, 6rem);">Elastic</span>
               <div class="bar-track"><div class="bar-fill bar-green" data-width="91.1%">0.728</div></div>
             </div>
             <div class="bar-row">
-              <span class="bar-label" style="min-width:7rem;">Affine</span>
-              <div class="bar-track"><div class="bar-fill bar-cyan" data-width="88.1%">0.705</div></div>
+              <span class="bar-label" style="min-width: clamp(4rem, 8vw, 6rem);">Affine</span>
+              <div class="bar-track"><div class="bar-fill bar-sky" data-width="88.1%">0.705</div></div>
             </div>
             <div class="bar-row">
-              <span class="bar-label" style="min-width:7rem;">Zoom</span>
-              <div class="bar-track"><div class="bar-fill bar-cyan" data-width="87%">0.696</div></div>
+              <span class="bar-label" style="min-width: clamp(4rem, 8vw, 6rem);">Zoom</span>
+              <div class="bar-track"><div class="bar-fill bar-sky" data-width="87%">0.696</div></div>
             </div>
             <div class="bar-row">
-              <span class="bar-label" style="min-width:7rem;">No Aug.</span>
+              <span class="bar-label" style="min-width: clamp(4rem, 8vw, 6rem);">No Aug.</span>
               <div class="bar-track"><div class="bar-fill bar-amber" data-width="85.5%">0.684</div></div>
             </div>
             <div class="bar-row">
-              <span class="bar-label" style="min-width:7rem;">Spatial Crop</span>
+              <span class="bar-label" style="min-width: clamp(4rem, 8vw, 6rem);">Sp. Crop</span>
               <div class="bar-track"><div class="bar-fill bar-red" data-width="83.6%">0.669</div></div>
             </div>
           </div>
         </div>
       </div>
-      <div class="insight">
+      <div class="insight reveal">
         <p><strong>Delayed elastic deformation is best</strong> (+4.4% over baseline). Learn basics first, augment later.</p>
       </div>
     </div>
   </div>
+</section>
 
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <!-- SLIDE 6: Batch Size -->
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <div class="slide slide-content" data-slide="6">
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 6: Effective Batch Size                                         -->
+<!-- Section: Results                                                      -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section class="slide" data-section="results" data-slide="6">
+  <div class="paper">
+    <div class="tabs">
+      <div class="tab tab-intro"><span>Intro</span></div>
+      <div class="tab tab-data"><span>Data</span></div>
+      <div class="tab tab-model"><span>Model</span></div>
+      <div class="tab tab-results active"><span>Results</span></div>
+      <div class="tab tab-end"><span>End</span></div>
+    </div>
     <span class="slide-num">07 / 13</span>
-    <span class="section-num">06</span>
-    <div class="stagger">
-      <span class="tag tag-purple">Results</span>
-      <h2>Effective Batch Size</h2>
-      <p style="margin-bottom: clamp(0.3rem,1vh,0.8rem);">Gradient accumulation simulates larger batches despite memory constraints (physical batch size = 1).</p>
-      <div class="two-col">
+    <div class="slide-content">
+      <div class="tag tag-results reveal">Results</div>
+      <h2 class="reveal">Effective Batch Size</h2>
+      <p class="reveal" style="margin-bottom: var(--content-gap);">Gradient accumulation simulates larger batches despite memory constraints (physical batch = 1).</p>
+      <div class="two-col reveal">
         <div>
           <h3>With LR Scaling</h3>
           <table class="results-table">
@@ -695,44 +999,51 @@ p, li {
           </table>
         </div>
       </div>
-      <div class="insight">
+      <div class="insight reveal">
         <p><strong>Linear LR scaling does not hold</strong> for 3D segmentation with variable-sized inputs. Moderate BSZ (2&ndash;4) works best.</p>
       </div>
     </div>
   </div>
+</section>
 
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <!-- SLIDE 7: Data Parallelism -->
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <div class="slide slide-content" data-slide="7">
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 7: Data Parallelism & Input Resolution                          -->
+<!-- Section: Results                                                      -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section class="slide" data-section="results" data-slide="7">
+  <div class="paper">
+    <div class="tabs">
+      <div class="tab tab-intro"><span>Intro</span></div>
+      <div class="tab tab-data"><span>Data</span></div>
+      <div class="tab tab-model"><span>Model</span></div>
+      <div class="tab tab-results active"><span>Results</span></div>
+      <div class="tab tab-end"><span>End</span></div>
+    </div>
     <span class="slide-num">08 / 13</span>
-    <span class="section-num">07</span>
-    <div class="stagger">
-      <span class="tag tag-green">Results</span>
-      <h2>Data Parallelism &amp; Input Resolution</h2>
-      <div class="two-col">
+    <div class="slide-content">
+      <div class="tag tag-results reveal">Results</div>
+      <h2 class="reveal">Data Parallelism &amp; Input Resolution</h2>
+      <div class="two-col reveal">
         <div>
           <h3>Multi-GPU Training</h3>
-          <div class="card-grid" style="grid-template-columns:1fr;">
-            <div class="card">
-              <div style="display:flex;justify-content:space-between;align-items:center;">
-                <div>
-                  <div class="card-label accent-4">4 GPUs</div>
-                  <div class="card-value">0.668</div>
-                </div>
-                <div>
-                  <div class="card-label accent">2 GPUs</div>
-                  <div class="card-value">0.651</div>
-                </div>
-                <div>
-                  <div class="card-label accent-2">1 GPU</div>
-                  <div class="card-value">0.647</div>
-                </div>
+          <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div class="card-label c-green">4 GPUs</div>
+                <div class="card-value">0.668</div>
               </div>
-              <div class="card-detail" style="margin-top:0.5rem;">More GPUs converge faster per wall-clock time</div>
+              <div>
+                <div class="card-label c-sky">2 GPUs</div>
+                <div class="card-value">0.651</div>
+              </div>
+              <div>
+                <div class="card-label c-lav">1 GPU</div>
+                <div class="card-value">0.647</div>
+              </div>
             </div>
+            <div class="card-detail" style="margin-top: 0.4rem;">More GPUs converge faster per wall-clock time</div>
           </div>
-          <div class="insight" style="margin-top:0.8rem;">
+          <div class="insight" style="margin-top: clamp(0.3rem, 0.8vh, 0.6rem);">
             <p>Requires resizing all volumes to the same dimensions for batching.</p>
           </div>
         </div>
@@ -740,67 +1051,86 @@ p, li {
           <h3>Input Resolution</h3>
           <div class="bar-chart">
             <div class="bar-row">
-              <span class="bar-label" style="min-width:6rem;">1.0x (base)</span>
+              <span class="bar-label" style="min-width: clamp(4rem, 7vw, 5.5rem);">1.0x (base)</span>
               <div class="bar-track"><div class="bar-fill bar-green" data-width="85.5%">0.684</div></div>
             </div>
             <div class="bar-row">
-              <span class="bar-label" style="min-width:6rem;">1.2x</span>
-              <div class="bar-track"><div class="bar-fill bar-cyan" data-width="80.8%">0.647</div></div>
+              <span class="bar-label" style="min-width: clamp(4rem, 7vw, 5.5rem);">1.2x</span>
+              <div class="bar-track"><div class="bar-fill bar-sky" data-width="80.8%">0.647</div></div>
             </div>
             <div class="bar-row">
-              <span class="bar-label" style="min-width:6rem;">0.8x</span>
+              <span class="bar-label" style="min-width: clamp(4rem, 7vw, 5.5rem);">0.8x</span>
               <div class="bar-track"><div class="bar-fill bar-amber" data-width="72.9%">0.584</div></div>
             </div>
             <div class="bar-row">
-              <span class="bar-label" style="min-width:6rem;">1.4x</span>
+              <span class="bar-label" style="min-width: clamp(4rem, 7vw, 5.5rem);">1.4x</span>
               <div class="bar-track"><div class="bar-fill bar-red" data-width="70.3%">0.562</div></div>
             </div>
           </div>
-          <div class="insight" style="margin-top:0.8rem;">
-            <p><strong>Non-monotonic:</strong> larger inputs exceed the receptive field. Match resolution to model capacity.</p>
+          <div class="insight" style="margin-top: clamp(0.3rem, 0.8vh, 0.6rem);">
+            <p><strong>Non-monotonic:</strong> larger inputs exceed the receptive field.</p>
           </div>
         </div>
       </div>
     </div>
   </div>
+</section>
 
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <!-- SLIDE 8: SSL -->
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <div class="slide slide-section" data-slide="8">
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 8: Self-Supervised Pretraining                                  -->
+<!-- Section: Results                                                      -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section class="slide" data-section="results" data-slide="8">
+  <div class="paper">
+    <div class="tabs">
+      <div class="tab tab-intro"><span>Intro</span></div>
+      <div class="tab tab-data"><span>Data</span></div>
+      <div class="tab tab-model"><span>Model</span></div>
+      <div class="tab tab-results active"><span>Results</span></div>
+      <div class="tab tab-end"><span>End</span></div>
+    </div>
     <span class="slide-num">09 / 13</span>
-    <span class="section-num">08</span>
-    <div class="stagger">
-      <span class="tag tag-amber">Results</span>
-      <h2>Self-Supervised Pretraining</h2>
-      <p style="max-width:38rem; margin-bottom:clamp(0.5rem,2vh,1.2rem);">Initialized encoder with Models Genesis weights (pretrained on chest CT via self-supervised proxy tasks).</p>
-      <div class="card-grid grid-2" style="max-width:36rem;">
+    <div class="slide-content">
+      <div class="tag tag-results reveal">Results</div>
+      <h2 class="reveal">Self-Supervised Pretraining</h2>
+      <p class="reveal" style="max-width: 32rem; margin-bottom: var(--content-gap);">Initialized encoder with Models Genesis weights (pretrained on chest CT via self-supervised proxy tasks).</p>
+      <div class="card-grid grid-2 reveal" style="max-width: 30rem;">
         <div class="card">
-          <div class="card-label accent">With Pretraining</div>
-          <div class="card-value accent">0.675</div>
+          <div class="card-label c-green">With Pretraining</div>
+          <div class="card-value c-green">0.675</div>
           <div class="card-detail">Best at epoch 60</div>
         </div>
         <div class="card">
-          <div class="card-label" style="color:var(--text-muted);">Without Pretraining</div>
+          <div class="card-label" style="color: var(--text-muted);">Without Pretraining</div>
           <div class="card-value">0.672</div>
           <div class="card-detail">Best at epoch 80</div>
         </div>
       </div>
-      <div class="insight" style="max-width:38rem;">
+      <div class="insight reveal" style="max-width: 32rem;">
         <p><strong>Modest benefit (+0.3%).</strong> Pretraining accelerates early convergence but the gap closes with longer training. Domain shift (chest &rarr; head/neck) limits transfer.</p>
       </div>
     </div>
   </div>
+</section>
 
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <!-- SLIDE 9: Summary Table -->
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <div class="slide slide-results" data-slide="9">
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 9: Best Configuration Summary                                   -->
+<!-- Section: End                                                          -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section class="slide" data-section="end" data-slide="9">
+  <div class="paper">
+    <div class="tabs">
+      <div class="tab tab-intro"><span>Intro</span></div>
+      <div class="tab tab-data"><span>Data</span></div>
+      <div class="tab tab-model"><span>Model</span></div>
+      <div class="tab tab-results"><span>Results</span></div>
+      <div class="tab tab-end active"><span>End</span></div>
+    </div>
     <span class="slide-num">10 / 13</span>
-    <div class="stagger">
-      <span class="tag tag-green">Summary</span>
-      <h2>Best Configuration Per Category</h2>
-      <table class="results-table" style="max-width:50rem;">
+    <div class="slide-content">
+      <div class="tag tag-end reveal">Summary</div>
+      <h2 class="reveal">Best Configuration Per Category</h2>
+      <table class="results-table reveal" style="max-width: 42rem;">
         <tr><th>Experiment</th><th>Best Config</th><th>Mean Dice</th></tr>
         <tr class="highlight"><td>Model Architecture</td><td>Deeper UNet</td><td class="best">0.755</td></tr>
         <tr class="highlight"><td>Loss Function</td><td>Dice-CE</td><td class="best">0.737</td></tr>
@@ -814,45 +1144,65 @@ p, li {
       </table>
     </div>
   </div>
+</section>
 
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <!-- SLIDE 10: Key Insights -->
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <div class="slide slide-section" data-slide="10">
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 10: Key Insights                                                -->
+<!-- Section: End                                                          -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section class="slide" data-section="end" data-slide="10">
+  <div class="paper">
+    <div class="tabs">
+      <div class="tab tab-intro"><span>Intro</span></div>
+      <div class="tab tab-data"><span>Data</span></div>
+      <div class="tab tab-model"><span>Model</span></div>
+      <div class="tab tab-results"><span>Results</span></div>
+      <div class="tab tab-end active"><span>End</span></div>
+    </div>
     <span class="slide-num">11 / 13</span>
-    <div class="stagger">
-      <span class="tag tag-cyan">Discussion</span>
-      <h2>Key Insights</h2>
-      <div class="card-grid grid-2" style="max-width:54rem;">
+    <div class="slide-content">
+      <div class="tag tag-end reveal">Discussion</div>
+      <h2 class="reveal">Key Insights</h2>
+      <div class="card-grid grid-2 reveal" style="max-width: 46rem;">
         <div class="card">
-          <div class="card-label accent-4">1. Model Depth Matters Most</div>
-          <p style="font-size:clamp(0.75rem,1.1vw,0.9rem);">Deeper UNet: <strong>0.755</strong>. Shallow networks produce <em>zero Dice</em> for small structures like chiasm and optic nerves.</p>
+          <div class="card-label c-green">1. Model Depth Matters Most</div>
+          <p style="font-size: var(--small-size);">Deeper UNet: <strong>0.755</strong>. Shallow networks produce <em>zero Dice</em> for small structures like chiasm and optic nerves.</p>
         </div>
         <div class="card">
-          <div class="card-label accent">2. Combine Loss Functions</div>
-          <p style="font-size:clamp(0.75rem,1.1vw,0.9rem);">Dice-CE improves over Dice alone by <strong>+3.6%</strong>. CE covers large structures, Dice focuses on small organs.</p>
+          <div class="card-label c-sky">2. Combine Loss Functions</div>
+          <p style="font-size: var(--small-size);">Dice-CE improves over Dice alone by <strong>+3.6%</strong>. CE covers large structures, Dice focuses on small organs.</p>
         </div>
         <div class="card">
-          <div class="card-label accent-3">3. Augment After Warm-up</div>
-          <p style="font-size:clamp(0.75rem,1.1vw,0.9rem);">Delayed elastic deformation: <strong>+4.4%</strong>. The model learns basic features before seeing augmented data.</p>
+          <div class="card-label c-amber">3. Augment After Warm-up</div>
+          <p style="font-size: var(--small-size);">Delayed elastic deformation: <strong>+4.4%</strong>. The model learns basic features before seeing augmented data.</p>
         </div>
         <div class="card">
-          <div class="card-label accent-2">4. Batch Size &amp; LR Interact</div>
-          <p style="font-size:clamp(0.75rem,1.1vw,0.9rem);">Linear LR scaling fails for variable-sized 3D volumes. Moderate batch sizes (2&ndash;4) without scaling work best.</p>
+          <div class="card-label c-lav">4. Batch Size &amp; LR Interact</div>
+          <p style="font-size: var(--small-size);">Linear LR scaling fails for variable-sized 3D volumes. Moderate batch sizes (2&ndash;4) without scaling work best.</p>
         </div>
       </div>
     </div>
   </div>
+</section>
 
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <!-- SLIDE 11: Limitations -->
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <div class="slide slide-content" data-slide="11">
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 11: Limitations & Future Work                                   -->
+<!-- Section: End                                                          -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section class="slide" data-section="end" data-slide="11">
+  <div class="paper">
+    <div class="tabs">
+      <div class="tab tab-intro"><span>Intro</span></div>
+      <div class="tab tab-data"><span>Data</span></div>
+      <div class="tab tab-model"><span>Model</span></div>
+      <div class="tab tab-results"><span>Results</span></div>
+      <div class="tab tab-end active"><span>End</span></div>
+    </div>
     <span class="slide-num">12 / 13</span>
-    <div class="stagger">
-      <span class="tag tag-amber">Limitations &amp; Future Work</span>
-      <h2>What&rsquo;s Next?</h2>
-      <div class="two-col">
+    <div class="slide-content">
+      <div class="tag tag-end reveal">Limitations &amp; Future Work</div>
+      <h2 class="reveal">What's Next?</h2>
+      <div class="two-col reveal">
         <div>
           <h3>Limitations</h3>
           <ul class="feature-list">
@@ -874,123 +1224,199 @@ p, li {
       </div>
     </div>
   </div>
+</section>
 
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <!-- SLIDE 12: Conclusion -->
-  <!-- ════════════════════════════════════════════════════════════════════ -->
-  <div class="slide slide-conclusion" data-slide="12">
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<!-- SLIDE 12: Conclusion                                                  -->
+<!-- Section: End                                                          -->
+<!-- ════════════════════════════════════════════════════════════════════════ -->
+<section class="slide" data-section="end" data-slide="12">
+  <div class="paper">
+    <div class="tabs">
+      <div class="tab tab-intro"><span>Intro</span></div>
+      <div class="tab tab-data"><span>Data</span></div>
+      <div class="tab tab-model"><span>Model</span></div>
+      <div class="tab tab-results"><span>Results</span></div>
+      <div class="tab tab-end active"><span>End</span></div>
+    </div>
     <span class="slide-num">13 / 13</span>
-    <div class="stagger">
-      <span class="tag tag-green">Conclusion</span>
-      <h1>Deeper models + hybrid loss +<br>delayed augmentation = <span class="accent-4">0.755 Dice</span></h1>
-      <div class="divider"></div>
-      <p style="max-width: 38rem; font-size:clamp(0.9rem,1.3vw,1.1rem);">Across 30+ experiments in 8 categories, we find that model depth, loss design, and smart augmentation are the three most impactful training strategies for 3D medical image segmentation.</p>
-      <p style="margin-top:clamp(0.5rem,1.5vh,1rem); color: var(--text-muted); font-size:clamp(0.75rem,1vw,0.85rem);">NYU Courant &middot; Deep Learning Systems &middot; PDDCA15 &middot; MONAI &middot; PyTorch</p>
+    <div class="slide-content" style="text-align: center; align-items: center;">
+      <div class="tag tag-end reveal">Conclusion</div>
+      <h1 class="reveal" style="max-width: 18em;">Deeper models + hybrid loss +<br>delayed augmentation = <strong class="c-green">0.755 Dice</strong></h1>
+      <div class="rule rule-green reveal" style="margin-left: auto; margin-right: auto;"></div>
+      <p class="reveal" style="max-width: 32em; text-align: center;">Across 30+ experiments in 8 categories, model depth, loss design, and smart augmentation are the three most impactful training strategies for 3D medical image segmentation.</p>
+      <p class="reveal" style="margin-top: clamp(0.6rem, 1.5vh, 1rem); color: var(--text-muted); font-size: var(--small-size); letter-spacing: 0.06em;">NYU Courant &middot; Deep Learning Systems &middot; PDDCA15 &middot; MONAI &middot; PyTorch</p>
     </div>
   </div>
-
-</div>
-
-<!-- Progress Bar -->
-<div class="progress-bar" id="progress"></div>
+</section>
 
 <script>
-// ─── Slide Navigation ──────────────────────────────────────────────────────
-(function() {
-  const slides = document.querySelectorAll('.slide');
-  const progress = document.getElementById('progress');
-  let current = 0;
-  let animating = false;
+/* ===========================================
+   SLIDE PRESENTATION CONTROLLER
+   Handles scroll-based navigation, animations,
+   bar chart fills, and interactive elements.
+   =========================================== */
 
-  function goTo(index) {
-    if (animating || index === current || index < 0 || index >= slides.length) return;
-    animating = true;
+class SlidePresentation {
+    constructor() {
+        this.slides = document.querySelectorAll('.slide');
+        this.progressBar = document.getElementById('progress');
+        this.navDotsContainer = document.getElementById('navDots');
+        this.navDots = [];
 
-    const dir = index > current ? 1 : -1;
-    const prev = slides[current];
-    const next = slides[index];
-
-    // Exit current slide
-    prev.classList.remove('active');
-    prev.classList.add(dir > 0 ? 'exit-left' : '');
-    prev.style.transform = dir > 0 ? 'translateX(-60px)' : 'translateX(60px)';
-    prev.style.opacity = '0';
-
-    // Enter next slide
-    next.style.transform = dir > 0 ? 'translateX(60px)' : 'translateX(-60px)';
-    next.style.opacity = '0';
-    next.classList.remove('exit-left');
-
-    requestAnimationFrame(() => {
-      next.classList.add('active');
-      next.style.transform = '';
-      next.style.opacity = '';
-      animateBars(next);
-    });
-
-    current = index;
-    progress.style.width = ((current / (slides.length - 1)) * 100) + '%';
-
-    setTimeout(() => {
-      prev.style.transform = '';
-      prev.style.opacity = '';
-      prev.classList.remove('exit-left');
-      animating = false;
-    }, 650);
-  }
-
-  function animateBars(slide) {
-    const bars = slide.querySelectorAll('.bar-fill');
-    bars.forEach((bar, i) => {
-      bar.style.width = '0';
-      setTimeout(() => {
-        bar.style.width = bar.dataset.width;
-      }, 200 + i * 80);
-    });
-  }
-
-  // Initial animation
-  animateBars(slides[0]);
-
-  // Keyboard navigation
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
-      e.preventDefault();
-      goTo(current + 1);
-    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-      e.preventDefault();
-      goTo(current - 1);
-    } else if (e.key === 'Home') {
-      e.preventDefault();
-      goTo(0);
-    } else if (e.key === 'End') {
-      e.preventDefault();
-      goTo(slides.length - 1);
+        this.createNavDots();
+        this.setupIntersectionObserver();
+        this.setupKeyboardNav();
+        this.setupTouchNav();
     }
-  });
 
-  // Touch/swipe support
-  let touchStartX = 0;
-  let touchStartY = 0;
-  document.addEventListener('touchstart', (e) => {
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-  });
-  document.addEventListener('touchend', (e) => {
-    const dx = e.changedTouches[0].clientX - touchStartX;
-    const dy = e.changedTouches[0].clientY - touchStartY;
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
-      if (dx < 0) goTo(current + 1);
-      else goTo(current - 1);
+    /* -------------------------------------------
+       NAV DOTS
+       Small circles on the right for quick jumps
+       ------------------------------------------- */
+    createNavDots() {
+        this.slides.forEach((slide, i) => {
+            const dot = document.createElement('button');
+            dot.classList.add('nav-dot');
+            dot.setAttribute('aria-label', `Go to slide ${i + 1}`);
+            dot.addEventListener('click', () => {
+                slide.scrollIntoView({ behavior: 'smooth' });
+            });
+            this.navDotsContainer.appendChild(dot);
+            this.navDots.push(dot);
+        });
     }
-  });
 
-  // Click navigation (left/right halves)
-  document.addEventListener('click', (e) => {
-    if (e.clientX > window.innerWidth * 0.5) goTo(current + 1);
-    else goTo(current - 1);
-  });
-})();
+    /* -------------------------------------------
+       INTERSECTION OBSERVER
+       Detects which slide is in view, triggers:
+       - .visible class for reveal animations
+       - Bar chart fill animations
+       - Progress bar and nav dot updates
+       ------------------------------------------- */
+    setupIntersectionObserver() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const slide = entry.target;
+                    const index = parseInt(slide.dataset.slide);
+
+                    /* Add visible class for reveal animations */
+                    slide.classList.add('visible');
+
+                    /* Animate bar charts in this slide */
+                    this.animateBars(slide);
+
+                    /* Update progress bar */
+                    const pct = (index / (this.slides.length - 1)) * 100;
+                    this.progressBar.style.width = pct + '%';
+
+                    /* Update nav dots */
+                    this.navDots.forEach((dot, i) => {
+                        dot.classList.toggle('active', i === index);
+                    });
+                }
+            });
+        }, {
+            threshold: 0.6
+        });
+
+        this.slides.forEach(slide => observer.observe(slide));
+    }
+
+    /* -------------------------------------------
+       BAR CHART ANIMATION
+       Fills bars from 0 to their data-width value
+       when the slide scrolls into view.
+       ------------------------------------------- */
+    animateBars(slide) {
+        const bars = slide.querySelectorAll('.bar-fill');
+        bars.forEach((bar, i) => {
+            /* Reset to zero first */
+            bar.style.width = '0';
+            /* Stagger the fill animation */
+            setTimeout(() => {
+                bar.style.width = bar.dataset.width;
+            }, 150 + i * 60);
+        });
+    }
+
+    /* -------------------------------------------
+       KEYBOARD NAVIGATION
+       Arrow keys, space, home/end
+       ------------------------------------------- */
+    setupKeyboardNav() {
+        document.addEventListener('keydown', (e) => {
+            /* Find the currently visible slide */
+            const current = this.getCurrentSlideIndex();
+
+            if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ') {
+                e.preventDefault();
+                const next = current + 1;
+                if (next < this.slides.length) {
+                    this.slides[next].scrollIntoView({ behavior: 'smooth' });
+                }
+            } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                e.preventDefault();
+                const prev = current - 1;
+                if (prev >= 0) {
+                    this.slides[prev].scrollIntoView({ behavior: 'smooth' });
+                }
+            } else if (e.key === 'Home') {
+                e.preventDefault();
+                this.slides[0].scrollIntoView({ behavior: 'smooth' });
+            } else if (e.key === 'End') {
+                e.preventDefault();
+                this.slides[this.slides.length - 1].scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    }
+
+    /* -------------------------------------------
+       TOUCH / SWIPE NAVIGATION
+       Swipe up/down on mobile to navigate
+       ------------------------------------------- */
+    setupTouchNav() {
+        let touchStartY = 0;
+
+        document.addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].clientY;
+        }, { passive: true });
+
+        document.addEventListener('touchend', (e) => {
+            const dy = e.changedTouches[0].clientY - touchStartY;
+            const current = this.getCurrentSlideIndex();
+
+            if (Math.abs(dy) > 50) {
+                if (dy < 0 && current < this.slides.length - 1) {
+                    this.slides[current + 1].scrollIntoView({ behavior: 'smooth' });
+                } else if (dy > 0 && current > 0) {
+                    this.slides[current - 1].scrollIntoView({ behavior: 'smooth' });
+                }
+            }
+        }, { passive: true });
+    }
+
+    /* -------------------------------------------
+       HELPER: Find index of currently visible slide
+       ------------------------------------------- */
+    getCurrentSlideIndex() {
+        const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+        const viewportH = window.innerHeight;
+
+        for (let i = this.slides.length - 1; i >= 0; i--) {
+            if (this.slides[i].offsetTop <= scrollTop + viewportH * 0.5) {
+                return i;
+            }
+        }
+        return 0;
+    }
+}
+
+/* Initialize when DOM is ready */
+document.addEventListener('DOMContentLoaded', () => {
+    new SlidePresentation();
+});
 </script>
 </body>
 </html>
