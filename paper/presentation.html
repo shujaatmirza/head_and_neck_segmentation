@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-Organ Segmentation for Head &amp; Neck Cancer</title>
+<style>
+/* ─── Reset & Base ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg-deep: #0a0e1a;
+  --bg-card: #111827;
+  --bg-card-hover: #1a2332;
+  --accent-primary: #06b6d4;
+  --accent-secondary: #8b5cf6;
+  --accent-tertiary: #f59e0b;
+  --accent-success: #10b981;
+  --accent-danger: #ef4444;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --glow-primary: rgba(6, 182, 212, 0.3);
+  --glow-secondary: rgba(139, 92, 246, 0.3);
+}
+
+html { font-size: 16px; scroll-behavior: smooth; }
+
+body {
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+/* ─── Slide Container ───────────────────────────────────────────────────── */
+.deck {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  position: relative;
+}
+
+.slide {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(2rem, 5vh, 4rem) clamp(3rem, 8vw, 8rem);
+  opacity: 0;
+  transform: translateX(60px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.slide.active {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: all;
+}
+
+.slide.exit-left {
+  opacity: 0;
+  transform: translateX(-60px);
+}
+
+/* ─── Typography ────────────────────────────────────────────────────────── */
+h1 {
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  margin-bottom: clamp(0.5rem, 2vh, 1.5rem);
+}
+
+h2 {
+  font-size: clamp(1.6rem, 3.5vw, 2.8rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin-bottom: clamp(0.5rem, 2vh, 1.2rem);
+}
+
+h3 {
+  font-size: clamp(1rem, 1.8vw, 1.4rem);
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: clamp(0.3rem, 1vh, 0.8rem);
+}
+
+p, li {
+  font-size: clamp(0.9rem, 1.5vw, 1.2rem);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(0.75rem, 1.2vw, 1rem);
+}
+
+/* ─── Accent Text ───────────────────────────────────────────────────────── */
+.accent { color: var(--accent-primary); }
+.accent-2 { color: var(--accent-secondary); }
+.accent-3 { color: var(--accent-tertiary); }
+.accent-4 { color: var(--accent-success); }
+
+/* ─── Slide Backgrounds ────────────────────────────────────────────────── */
+.slide::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: -1;
+}
+
+.slide-title::before {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 80%, rgba(6, 182, 212, 0.12) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 20%, rgba(139, 92, 246, 0.1) 0%, transparent 60%),
+    var(--bg-deep);
+}
+
+.slide-section::before {
+  background:
+    radial-gradient(ellipse 50% 50% at 50% 50%, rgba(139, 92, 246, 0.08) 0%, transparent 70%),
+    var(--bg-deep);
+}
+
+.slide-content::before {
+  background: var(--bg-deep);
+}
+
+.slide-results::before {
+  background:
+    radial-gradient(ellipse 60% 40% at 30% 70%, rgba(16, 185, 129, 0.08) 0%, transparent 60%),
+    var(--bg-deep);
+}
+
+.slide-conclusion::before {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 50%, rgba(245, 158, 11, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 40% at 80% 80%, rgba(6, 182, 212, 0.06) 0%, transparent 60%),
+    var(--bg-deep);
+}
+
+/* ─── Slide Number ──────────────────────────────────────────────────────── */
+.slide-num {
+  position: absolute;
+  top: clamp(1rem, 3vh, 2rem);
+  right: clamp(2rem, 5vw, 4rem);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(0.7rem, 1vw, 0.85rem);
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+}
+
+/* ─── Section Number (large decorative) ─────────────────────────────────── */
+.section-num {
+  font-size: clamp(4rem, 10vw, 9rem);
+  font-weight: 700;
+  color: transparent;
+  -webkit-text-stroke: 1.5px var(--accent-primary);
+  opacity: 0.15;
+  position: absolute;
+  right: clamp(2rem, 6vw, 6rem);
+  top: clamp(1rem, 3vh, 3rem);
+  line-height: 1;
+  z-index: 0;
+}
+
+/* ─── Cards / Grid ──────────────────────────────────────────────────────── */
+.card-grid {
+  display: grid;
+  gap: clamp(0.6rem, 1.5vh, 1rem);
+  margin-top: clamp(0.5rem, 2vh, 1.5rem);
+}
+
+.grid-2 { grid-template-columns: 1fr 1fr; }
+.grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+.grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: clamp(0.8rem, 2vh, 1.5rem);
+  transition: border-color 0.3s, background 0.3s;
+}
+
+.card:hover {
+  border-color: rgba(6, 182, 212, 0.3);
+  background: var(--bg-card-hover);
+}
+
+.card-label {
+  font-size: clamp(0.65rem, 0.9vw, 0.75rem);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.3rem;
+}
+
+.card-value {
+  font-size: clamp(1.4rem, 3vw, 2.2rem);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.card-detail {
+  font-size: clamp(0.7rem, 1vw, 0.85rem);
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+/* ─── Horizontal Bar Chart ──────────────────────────────────────────────── */
+.bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.4rem, 1vh, 0.7rem);
+  margin-top: clamp(0.5rem, 1.5vh, 1rem);
+  width: 100%;
+}
+
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.bar-label {
+  font-size: clamp(0.7rem, 1vw, 0.85rem);
+  color: var(--text-secondary);
+  min-width: clamp(6rem, 12vw, 10rem);
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.bar-track {
+  flex: 1;
+  height: clamp(1.4rem, 2.5vh, 2rem);
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 0.5rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(0.6rem, 0.9vw, 0.75rem);
+  font-weight: 500;
+  color: white;
+  width: 0;
+  transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.slide.active .bar-fill { /* width set inline */ }
+
+.bar-cyan { background: linear-gradient(90deg, rgba(6, 182, 212, 0.7), var(--accent-primary)); }
+.bar-purple { background: linear-gradient(90deg, rgba(139, 92, 246, 0.7), var(--accent-secondary)); }
+.bar-amber { background: linear-gradient(90deg, rgba(245, 158, 11, 0.7), var(--accent-tertiary)); }
+.bar-green { background: linear-gradient(90deg, rgba(16, 185, 129, 0.7), var(--accent-success)); }
+.bar-red { background: linear-gradient(90deg, rgba(239, 68, 68, 0.7), var(--accent-danger)); }
+
+/* ─── Tag ───────────────────────────────────────────────────────────────── */
+.tag {
+  display: inline-block;
+  font-size: clamp(0.6rem, 0.85vw, 0.72rem);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  padding: 0.25em 0.8em;
+  border-radius: 999px;
+  border: 1px solid;
+  margin-bottom: clamp(0.5rem, 1.5vh, 1rem);
+}
+
+.tag-cyan { color: var(--accent-primary); border-color: rgba(6, 182, 212, 0.4); background: rgba(6, 182, 212, 0.08); }
+.tag-purple { color: var(--accent-secondary); border-color: rgba(139, 92, 246, 0.4); background: rgba(139, 92, 246, 0.08); }
+.tag-amber { color: var(--accent-tertiary); border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.08); }
+.tag-green { color: var(--accent-success); border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.08); }
+
+/* ─── Divider ───────────────────────────────────────────────────────────── */
+.divider {
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  border-radius: 2px;
+  margin: clamp(0.5rem, 1.5vh, 1rem) 0;
+}
+
+/* ─── List ──────────────────────────────────────────────────────────────── */
+.feature-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.4rem, 1vh, 0.7rem);
+  margin-top: clamp(0.3rem, 1vh, 0.8rem);
+}
+
+.feature-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.feature-list li::before {
+  content: '▸';
+  color: var(--accent-primary);
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 0.1em;
+}
+
+/* ─── Table ─────────────────────────────────────────────────────────────── */
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: clamp(0.5rem, 1.5vh, 1rem);
+  font-size: clamp(0.75rem, 1.1vw, 0.95rem);
+}
+
+.results-table th {
+  text-align: left;
+  padding: clamp(0.3rem, 0.7vh, 0.6rem) clamp(0.5rem, 1vw, 1rem);
+  border-bottom: 2px solid rgba(6, 182, 212, 0.3);
+  color: var(--accent-primary);
+  font-weight: 600;
+  font-size: clamp(0.65rem, 0.9vw, 0.8rem);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.results-table td {
+  padding: clamp(0.3rem, 0.7vh, 0.5rem) clamp(0.5rem, 1vw, 1rem);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+}
+
+.results-table .highlight td {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.results-table .best {
+  color: var(--accent-success);
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* ─── Progress Bar (nav) ────────────────────────────────────────────────── */
+.progress-bar {
+  position: fixed;
+  bottom: 0; left: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 100;
+}
+
+/* ─── Stagger animation for children ────────────────────────────────────── */
+.slide.active .stagger > * {
+  animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.slide.active .stagger > *:nth-child(1) { animation-delay: 0.1s; }
+.slide.active .stagger > *:nth-child(2) { animation-delay: 0.2s; }
+.slide.active .stagger > *:nth-child(3) { animation-delay: 0.3s; }
+.slide.active .stagger > *:nth-child(4) { animation-delay: 0.35s; }
+.slide.active .stagger > *:nth-child(5) { animation-delay: 0.4s; }
+.slide.active .stagger > *:nth-child(6) { animation-delay: 0.45s; }
+.slide.active .stagger > *:nth-child(7) { animation-delay: 0.5s; }
+.slide.active .stagger > *:nth-child(8) { animation-delay: 0.55s; }
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Two columns ───────────────────────────────────────────────────────── */
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: start;
+}
+
+/* ─── Insight callout ───────────────────────────────────────────────────── */
+.insight {
+  border-left: 3px solid var(--accent-tertiary);
+  padding: clamp(0.5rem, 1vh, 0.8rem) clamp(0.8rem, 1.5vw, 1.2rem);
+  background: rgba(245, 158, 11, 0.05);
+  border-radius: 0 8px 8px 0;
+  margin-top: clamp(0.5rem, 1.5vh, 1rem);
+}
+
+.insight p {
+  color: var(--text-primary);
+  font-size: clamp(0.8rem, 1.2vw, 1rem);
+}
+
+/* ─── Responsive ────────────────────────────────────────────────────────── */
+@media (max-height: 700px) {
+  .slide { padding: 1.5rem 3rem; }
+  h1 { font-size: clamp(1.8rem, 4vw, 3rem); }
+}
+
+@media (max-height: 500px) {
+  .slide { padding: 1rem 2rem; }
+  .card { padding: 0.5rem; }
+}
+
+@media (max-width: 768px) {
+  .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; }
+  .two-col { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SLIDE 0: Title -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div class="slide slide-title active" data-slide="0">
+    <span class="slide-num">01 / 13</span>
+    <div class="stagger">
+      <span class="tag tag-cyan">Deep Learning Systems &mdash; NYU Courant</span>
+      <h1>Multi-Organ Segmentation for<br><span class="accent">Head &amp; Neck Cancer</span></h1>
+      <div class="divider"></div>
+      <p style="max-width: 36rem;">A systematic study of training strategies for 3D medical image segmentation on CT scans with 9 anatomical structures.</p>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SLIDE 1: Problem -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div class="slide slide-section" data-slide="1">
+    <span class="slide-num">02 / 13</span>
+    <span class="section-num">01</span>
+    <div class="stagger">
+      <span class="tag tag-purple">Motivation</span>
+      <h2>The Problem</h2>
+      <p style="max-width:40rem; margin-bottom: clamp(0.5rem, 2vh, 1.5rem);">Radiation therapy for head &amp; neck cancer requires precise delineation of organs-at-risk. Manual segmentation is slow, costly, and inconsistent.</p>
+      <div class="card-grid grid-3">
+        <div class="card">
+          <div class="card-label accent">Challenge 1</div>
+          <div class="card-value" style="font-size:clamp(1rem,1.8vw,1.5rem);">Class Imbalance</div>
+          <div class="card-detail">OARs occupy &lt;5% of the CT volume. Naive models predict only background.</div>
+        </div>
+        <div class="card">
+          <div class="card-label accent-2">Challenge 2</div>
+          <div class="card-value" style="font-size:clamp(1rem,1.8vw,1.5rem);">Memory Limits</div>
+          <div class="card-detail">A single 3D volume + UNet can exceed 30 GB, forcing batch size = 1.</div>
+        </div>
+        <div class="card">
+          <div class="card-label accent-3">Challenge 3</div>
+          <div class="card-value" style="font-size:clamp(1rem,1.8vw,1.5rem);">Limited Data</div>
+          <div class="card-detail">Only 33 training volumes &mdash; high risk of overfitting.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SLIDE 2: Dataset -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div class="slide slide-content" data-slide="2">
+    <span class="slide-num">03 / 13</span>
+    <span class="section-num">02</span>
+    <div class="stagger">
+      <span class="tag tag-cyan">Dataset</span>
+      <h2>PDDCA15 &mdash; 9 Organs at Risk</h2>
+      <div class="two-col">
+        <div>
+          <ul class="feature-list">
+            <li>Brain Stem</li>
+            <li>Chiasm</li>
+            <li>Mandible</li>
+            <li>Optic Nerve (Left &amp; Right)</li>
+            <li>Parotid Gland (Left &amp; Right)</li>
+            <li>Submandibular Gland (Left &amp; Right)</li>
+          </ul>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:0.8rem;">
+            <div class="card-label accent">Training</div>
+            <div class="card-value">33 <span style="font-size:0.5em; color:var(--text-muted);">CT volumes</span></div>
+            <div class="card-detail">PDDCA15 + Cetuximab + PET-CT cohorts</div>
+          </div>
+          <div class="card" style="margin-bottom:0.8rem;">
+            <div class="card-label accent-2">Testing</div>
+            <div class="card-value">5 <span style="font-size:0.5em; color:var(--text-muted);">CT volumes</span></div>
+          </div>
+          <div class="card">
+            <div class="card-label accent-3">Avg. Volume</div>
+            <div class="card-value mono">78 &times; 206 &times; 164</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SLIDE 3: Architecture -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div class="slide slide-content" data-slide="3">
+    <span class="slide-num">04 / 13</span>
+    <span class="section-num">03</span>
+    <div class="stagger">
+      <span class="tag tag-green">Methods</span>
+      <h2>Model Architectures</h2>
+      <p style="margin-bottom: clamp(0.5rem,1.5vh,1rem);">Three 3D architectures from MONAI, all with 10-channel output (background + 9 OARs).</p>
+      <div class="card-grid grid-3">
+        <div class="card">
+          <div class="card-label accent">Baseline</div>
+          <div class="card-value" style="font-size:clamp(1.1rem,2vw,1.6rem);">UNet</div>
+          <div class="card-detail">Features: (32, 64, 128, 256)<br>3 downsampling levels</div>
+          <div class="card-value accent" style="margin-top:0.5rem;font-size:clamp(1.2rem,2vw,1.8rem);">0.682</div>
+        </div>
+        <div class="card" style="border-color:rgba(16,185,129,0.3);">
+          <div class="card-label accent-4">Best</div>
+          <div class="card-value" style="font-size:clamp(1.1rem,2vw,1.6rem);">Deeper UNet</div>
+          <div class="card-detail">Features: (32, 64, 128, 256, 512, 32)<br>5 downsampling levels</div>
+          <div class="card-value accent-4" style="margin-top:0.5rem;font-size:clamp(1.2rem,2vw,1.8rem);">0.755</div>
+        </div>
+        <div class="card">
+          <div class="card-label accent-2">Alternative</div>
+          <div class="card-value" style="font-size:clamp(1.1rem,2vw,1.6rem);">SegResNet</div>
+          <div class="card-detail">Residual blocks, deconv upsampling<br>1.19M parameters</div>
+          <div class="card-value accent-2" style="margin-top:0.5rem;font-size:clamp(1.2rem,2vw,1.8rem);">0.660</div>
+        </div>
+      </div>
+      <div class="insight">
+        <p><strong>Key finding:</strong> Model depth is critical. Small structures (chiasm, optic nerves) get <strong>zero Dice</strong> with shallow networks.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SLIDE 4: Loss Functions -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div class="slide slide-results" data-slide="4">
+    <span class="slide-num">05 / 13</span>
+    <span class="section-num">04</span>
+    <div class="stagger">
+      <span class="tag tag-amber">Results</span>
+      <h2>Loss Function Comparison</h2>
+      <div class="bar-chart" id="loss-chart">
+        <div class="bar-row">
+          <span class="bar-label">Dice-CE Loss</span>
+          <div class="bar-track"><div class="bar-fill bar-green" data-width="92%">0.737</div></div>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">Dice Loss</span>
+          <div class="bar-track"><div class="bar-fill bar-cyan" data-width="87.6%">0.701</div></div>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">Dice-Focal</span>
+          <div class="bar-track"><div class="bar-fill bar-cyan" data-width="86.9%">0.695</div></div>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">Masked Dice</span>
+          <div class="bar-track"><div class="bar-fill bar-purple" data-width="85%">0.680</div></div>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">Tversky</span>
+          <div class="bar-track"><div class="bar-fill bar-purple" data-width="79.3%">0.634</div></div>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">Focal</span>
+          <div class="bar-track"><div class="bar-fill bar-amber" data-width="79%">0.632</div></div>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">Gen. Dice</span>
+          <div class="bar-track"><div class="bar-fill bar-red" data-width="31.3%">0.250</div></div>
+        </div>
+      </div>
+      <div class="insight">
+        <p><strong>+3.6% over Dice alone.</strong> CE provides gradients for large structures; Dice focuses on small organs.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SLIDE 5: Augmentation -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div class="slide slide-content" data-slide="5">
+    <span class="slide-num">06 / 13</span>
+    <span class="section-num">05</span>
+    <div class="stagger">
+      <span class="tag tag-cyan">Results</span>
+      <h2>Data Augmentation</h2>
+      <div class="two-col">
+        <div>
+          <h3>Standard (from epoch 1)</h3>
+          <div class="bar-chart">
+            <div class="bar-row">
+              <span class="bar-label" style="min-width:7rem;">Elastic</span>
+              <div class="bar-track"><div class="bar-fill bar-green" data-width="88.8%">0.710</div></div>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label" style="min-width:7rem;">Affine</span>
+              <div class="bar-track"><div class="bar-fill bar-cyan" data-width="88.5%">0.708</div></div>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label" style="min-width:7rem;">Zoom</span>
+              <div class="bar-track"><div class="bar-fill bar-cyan" data-width="87.7%">0.701</div></div>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label" style="min-width:7rem;">Spatial Crop</span>
+              <div class="bar-track"><div class="bar-fill bar-purple" data-width="85.7%">0.685</div></div>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label" style="min-width:7rem;">No Aug.</span>
+              <div class="bar-track"><div class="bar-fill bar-amber" data-width="85.5%">0.684</div></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3>Delayed (from epoch 40)</h3>
+          <div class="bar-chart">
+            <div class="bar-row">
+              <span class="bar-label" style="min-width:7rem;">Elastic</span>
+              <div class="bar-track"><div class="bar-fill bar-green" data-width="91.1%">0.728</div></div>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label" style="min-width:7rem;">Affine</span>
+              <div class="bar-track"><div class="bar-fill bar-cyan" data-width="88.1%">0.705</div></div>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label" style="min-width:7rem;">Zoom</span>
+              <div class="bar-track"><div class="bar-fill bar-cyan" data-width="87%">0.696</div></div>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label" style="min-width:7rem;">No Aug.</span>
+              <div class="bar-track"><div class="bar-fill bar-amber" data-width="85.5%">0.684</div></div>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label" style="min-width:7rem;">Spatial Crop</span>
+              <div class="bar-track"><div class="bar-fill bar-red" data-width="83.6%">0.669</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="insight">
+        <p><strong>Delayed elastic deformation is best</strong> (+4.4% over baseline). Learn basics first, augment later.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SLIDE 6: Batch Size -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div class="slide slide-content" data-slide="6">
+    <span class="slide-num">07 / 13</span>
+    <span class="section-num">06</span>
+    <div class="stagger">
+      <span class="tag tag-purple">Results</span>
+      <h2>Effective Batch Size</h2>
+      <p style="margin-bottom: clamp(0.3rem,1vh,0.8rem);">Gradient accumulation simulates larger batches despite memory constraints (physical batch size = 1).</p>
+      <div class="two-col">
+        <div>
+          <h3>With LR Scaling</h3>
+          <table class="results-table">
+            <tr><th>BSZ</th><th>Dice</th><th>Epoch</th></tr>
+            <tr class="highlight"><td>2</td><td class="best">0.688</td><td>130</td></tr>
+            <tr><td>4</td><td>0.661</td><td>80</td></tr>
+            <tr><td>16</td><td>0.647</td><td>100</td></tr>
+            <tr><td>8</td><td>0.645</td><td>110</td></tr>
+          </table>
+        </div>
+        <div>
+          <h3>Without LR Scaling</h3>
+          <table class="results-table">
+            <tr><th>BSZ</th><th>Dice</th><th>Epoch</th></tr>
+            <tr class="highlight"><td>4</td><td class="best">0.692</td><td>70</td></tr>
+            <tr><td>8</td><td>0.679</td><td>340</td></tr>
+            <tr><td>16</td><td>0.678</td><td>190</td></tr>
+            <tr><td>2</td><td>0.666</td><td>140</td></tr>
+          </table>
+        </div>
+      </div>
+      <div class="insight">
+        <p><strong>Linear LR scaling does not hold</strong> for 3D segmentation with variable-sized inputs. Moderate BSZ (2&ndash;4) works best.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SLIDE 7: Data Parallelism -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div class="slide slide-content" data-slide="7">
+    <span class="slide-num">08 / 13</span>
+    <span class="section-num">07</span>
+    <div class="stagger">
+      <span class="tag tag-green">Results</span>
+      <h2>Data Parallelism &amp; Input Resolution</h2>
+      <div class="two-col">
+        <div>
+          <h3>Multi-GPU Training</h3>
+          <div class="card-grid" style="grid-template-columns:1fr;">
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <div>
+                  <div class="card-label accent-4">4 GPUs</div>
+                  <div class="card-value">0.668</div>
+                </div>
+                <div>
+                  <div class="card-label accent">2 GPUs</div>
+                  <div class="card-value">0.651</div>
+                </div>
+                <div>
+                  <div class="card-label accent-2">1 GPU</div>
+                  <div class="card-value">0.647</div>
+                </div>
+              </div>
+              <div class="card-detail" style="margin-top:0.5rem;">More GPUs converge faster per wall-clock time</div>
+            </div>
+          </div>
+          <div class="insight" style="margin-top:0.8rem;">
+            <p>Requires resizing all volumes to the same dimensions for batching.</p>
+          </div>
+        </div>
+        <div>
+          <h3>Input Resolution</h3>
+          <div class="bar-chart">
+            <div class="bar-row">
+              <span class="bar-label" style="min-width:6rem;">1.0x (base)</span>
+              <div class="bar-track"><div class="bar-fill bar-green" data-width="85.5%">0.684</div></div>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label" style="min-width:6rem;">1.2x</span>
+              <div class="bar-track"><div class="bar-fill bar-cyan" data-width="80.8%">0.647</div></div>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label" style="min-width:6rem;">0.8x</span>
+              <div class="bar-track"><div class="bar-fill bar-amber" data-width="72.9%">0.584</div></div>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label" style="min-width:6rem;">1.4x</span>
+              <div class="bar-track"><div class="bar-fill bar-red" data-width="70.3%">0.562</div></div>
+            </div>
+          </div>
+          <div class="insight" style="margin-top:0.8rem;">
+            <p><strong>Non-monotonic:</strong> larger inputs exceed the receptive field. Match resolution to model capacity.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SLIDE 8: SSL -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div class="slide slide-section" data-slide="8">
+    <span class="slide-num">09 / 13</span>
+    <span class="section-num">08</span>
+    <div class="stagger">
+      <span class="tag tag-amber">Results</span>
+      <h2>Self-Supervised Pretraining</h2>
+      <p style="max-width:38rem; margin-bottom:clamp(0.5rem,2vh,1.2rem);">Initialized encoder with Models Genesis weights (pretrained on chest CT via self-supervised proxy tasks).</p>
+      <div class="card-grid grid-2" style="max-width:36rem;">
+        <div class="card">
+          <div class="card-label accent">With Pretraining</div>
+          <div class="card-value accent">0.675</div>
+          <div class="card-detail">Best at epoch 60</div>
+        </div>
+        <div class="card">
+          <div class="card-label" style="color:var(--text-muted);">Without Pretraining</div>
+          <div class="card-value">0.672</div>
+          <div class="card-detail">Best at epoch 80</div>
+        </div>
+      </div>
+      <div class="insight" style="max-width:38rem;">
+        <p><strong>Modest benefit (+0.3%).</strong> Pretraining accelerates early convergence but the gap closes with longer training. Domain shift (chest &rarr; head/neck) limits transfer.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SLIDE 9: Summary Table -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div class="slide slide-results" data-slide="9">
+    <span class="slide-num">10 / 13</span>
+    <div class="stagger">
+      <span class="tag tag-green">Summary</span>
+      <h2>Best Configuration Per Category</h2>
+      <table class="results-table" style="max-width:50rem;">
+        <tr><th>Experiment</th><th>Best Config</th><th>Mean Dice</th></tr>
+        <tr class="highlight"><td>Model Architecture</td><td>Deeper UNet</td><td class="best">0.755</td></tr>
+        <tr class="highlight"><td>Loss Function</td><td>Dice-CE</td><td class="best">0.737</td></tr>
+        <tr><td>Delayed Augmentation</td><td>Random Elastic</td><td>0.728</td></tr>
+        <tr><td>Standard Augmentation</td><td>Random Elastic</td><td>0.710</td></tr>
+        <tr><td>Eff. BSZ (No LR Scale)</td><td>Batch Size 4</td><td>0.692</td></tr>
+        <tr><td>Eff. BSZ (LR Scale)</td><td>Batch Size 2</td><td>0.688</td></tr>
+        <tr><td>Input Resolution</td><td>1.0x (base)</td><td>0.684</td></tr>
+        <tr><td>SSL Pretraining</td><td>With Pretraining</td><td>0.675</td></tr>
+        <tr><td>Data Parallelism</td><td>4 GPUs</td><td>0.668</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SLIDE 10: Key Insights -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div class="slide slide-section" data-slide="10">
+    <span class="slide-num">11 / 13</span>
+    <div class="stagger">
+      <span class="tag tag-cyan">Discussion</span>
+      <h2>Key Insights</h2>
+      <div class="card-grid grid-2" style="max-width:54rem;">
+        <div class="card">
+          <div class="card-label accent-4">1. Model Depth Matters Most</div>
+          <p style="font-size:clamp(0.75rem,1.1vw,0.9rem);">Deeper UNet: <strong>0.755</strong>. Shallow networks produce <em>zero Dice</em> for small structures like chiasm and optic nerves.</p>
+        </div>
+        <div class="card">
+          <div class="card-label accent">2. Combine Loss Functions</div>
+          <p style="font-size:clamp(0.75rem,1.1vw,0.9rem);">Dice-CE improves over Dice alone by <strong>+3.6%</strong>. CE covers large structures, Dice focuses on small organs.</p>
+        </div>
+        <div class="card">
+          <div class="card-label accent-3">3. Augment After Warm-up</div>
+          <p style="font-size:clamp(0.75rem,1.1vw,0.9rem);">Delayed elastic deformation: <strong>+4.4%</strong>. The model learns basic features before seeing augmented data.</p>
+        </div>
+        <div class="card">
+          <div class="card-label accent-2">4. Batch Size &amp; LR Interact</div>
+          <p style="font-size:clamp(0.75rem,1.1vw,0.9rem);">Linear LR scaling fails for variable-sized 3D volumes. Moderate batch sizes (2&ndash;4) without scaling work best.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SLIDE 11: Limitations -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div class="slide slide-content" data-slide="11">
+    <span class="slide-num">12 / 13</span>
+    <div class="stagger">
+      <span class="tag tag-amber">Limitations &amp; Future Work</span>
+      <h2>What&rsquo;s Next?</h2>
+      <div class="two-col">
+        <div>
+          <h3>Limitations</h3>
+          <ul class="feature-list">
+            <li>Fixed train/test split, no cross-validation</li>
+            <li>Only Dice metric &mdash; no Hausdorff distance</li>
+            <li>Small test set (5 patients)</li>
+            <li>No ensemble methods explored</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Future Directions</h3>
+          <ul class="feature-list">
+            <li>K-fold cross-validation with confidence intervals</li>
+            <li>Hausdorff distance &amp; surface DSC metrics</li>
+            <li>Attention mechanisms (Swin UNETR)</li>
+            <li>nnU-Net self-configuring pipeline</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <!-- SLIDE 12: Conclusion -->
+  <!-- ════════════════════════════════════════════════════════════════════ -->
+  <div class="slide slide-conclusion" data-slide="12">
+    <span class="slide-num">13 / 13</span>
+    <div class="stagger">
+      <span class="tag tag-green">Conclusion</span>
+      <h1>Deeper models + hybrid loss +<br>delayed augmentation = <span class="accent-4">0.755 Dice</span></h1>
+      <div class="divider"></div>
+      <p style="max-width: 38rem; font-size:clamp(0.9rem,1.3vw,1.1rem);">Across 30+ experiments in 8 categories, we find that model depth, loss design, and smart augmentation are the three most impactful training strategies for 3D medical image segmentation.</p>
+      <p style="margin-top:clamp(0.5rem,1.5vh,1rem); color: var(--text-muted); font-size:clamp(0.75rem,1vw,0.85rem);">NYU Courant &middot; Deep Learning Systems &middot; PDDCA15 &middot; MONAI &middot; PyTorch</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Progress Bar -->
+<div class="progress-bar" id="progress"></div>
+
+<script>
+// ─── Slide Navigation ──────────────────────────────────────────────────────
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const progress = document.getElementById('progress');
+  let current = 0;
+  let animating = false;
+
+  function goTo(index) {
+    if (animating || index === current || index < 0 || index >= slides.length) return;
+    animating = true;
+
+    const dir = index > current ? 1 : -1;
+    const prev = slides[current];
+    const next = slides[index];
+
+    // Exit current slide
+    prev.classList.remove('active');
+    prev.classList.add(dir > 0 ? 'exit-left' : '');
+    prev.style.transform = dir > 0 ? 'translateX(-60px)' : 'translateX(60px)';
+    prev.style.opacity = '0';
+
+    // Enter next slide
+    next.style.transform = dir > 0 ? 'translateX(60px)' : 'translateX(-60px)';
+    next.style.opacity = '0';
+    next.classList.remove('exit-left');
+
+    requestAnimationFrame(() => {
+      next.classList.add('active');
+      next.style.transform = '';
+      next.style.opacity = '';
+      animateBars(next);
+    });
+
+    current = index;
+    progress.style.width = ((current / (slides.length - 1)) * 100) + '%';
+
+    setTimeout(() => {
+      prev.style.transform = '';
+      prev.style.opacity = '';
+      prev.classList.remove('exit-left');
+      animating = false;
+    }, 650);
+  }
+
+  function animateBars(slide) {
+    const bars = slide.querySelectorAll('.bar-fill');
+    bars.forEach((bar, i) => {
+      bar.style.width = '0';
+      setTimeout(() => {
+        bar.style.width = bar.dataset.width;
+      }, 200 + i * 80);
+    });
+  }
+
+  // Initial animation
+  animateBars(slides[0]);
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+      e.preventDefault();
+      goTo(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      goTo(current - 1);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      goTo(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      goTo(slides.length - 1);
+    }
+  });
+
+  // Touch/swipe support
+  let touchStartX = 0;
+  let touchStartY = 0;
+  document.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  });
+  document.addEventListener('touchend', (e) => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 50) {
+      if (dx < 0) goTo(current + 1);
+      else goTo(current - 1);
+    }
+  });
+
+  // Click navigation (left/right halves)
+  document.addEventListener('click', (e) => {
+    if (e.clientX > window.innerWidth * 0.5) goTo(current + 1);
+    else goTo(current - 1);
+  });
+})();
+</script>
+</body>
+</html>
